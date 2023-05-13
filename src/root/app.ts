@@ -7,7 +7,9 @@ import morgan from 'morgan';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import compression from 'compression';
+import passport from 'passport';
 import router from './app.route';
+import { applyPassportStrategy } from '../02-authentication/middlewares/passport';
 import { ErrorResponse, NotFoundError } from './responseHandler/error.response';
 
 const app = express();
@@ -30,8 +32,9 @@ if (config.env === 'dev') {
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 app.use(compression());
+
+applyPassportStrategy(passport);
 
 //* Init db
 import './db';
