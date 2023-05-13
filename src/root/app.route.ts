@@ -4,6 +4,7 @@ import accessController from '../02-authentication/conttoller';
 import accessRouter from '../02-authentication/route';
 import workspaceRouter from '../03-workspace/route';
 import boardRouter from '../04-board/route';
+import columnRouter from '../05-column/route';
 
 const router = Router();
 
@@ -19,5 +20,8 @@ router.use('', workspaceRouter);
 
 //* Board
 router.use('', boardRouter);
+
+// *
+router.use('', columnRouter);
 
 export default router;

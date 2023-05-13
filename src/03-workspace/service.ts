@@ -12,7 +12,6 @@ import {
 import QueryTransform from '../root/utils/queryTransform';
 import { IWorkspace } from './interfaces/workspace';
 import Workspace from '../models/workspace';
-import Board from '../models/board';
 
 export default class WorkspaceService {
   static async searchWorkspace({ keyString }: ISearchWorkspaceParams) {
@@ -88,15 +87,9 @@ export default class WorkspaceService {
   }
 
   static async deleteWorkspace({ workspaceId }: IDeleteWorkspaceParams) {
-    const foundWorkspace = await Workspace.findById(workspaceId);
-    if (!foundWorkspace) throw new BadRequestError('Workspace is not found');
-    if (foundWorkspace.isMain) throw new BadRequestError(`This main workspace cant not deleted`);
     return await performTransaction(async (session) => {
       // Delete all boards in this workspace
-
-      await Board.deleteAllBoards({ boardIds: foundWorkspace.boards, session });
-
-      await foundWorkspace.deleteOne({ session });
+      await Workspace.deleteWorkspace({ workspaceId, session });
     });
   }
 }

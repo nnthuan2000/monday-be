@@ -25,12 +25,12 @@ var typeSchema = new Schema<IType, TypeModel, ITypeMethods>(
 );
 
 typeSchema.static('createTypes', async function createTypes() {
-  const creatingEnumerationTypes = Object.values(MultipleValueTypes).map(async (type) => {
-    await this.create({ name: type });
-  });
-  const creatingScalarTypes = Object.values(SingleValueTypes).map(async (type) => {
-    await this.create({ name: type });
-  });
+  const creatingEnumerationTypes = Object.values(MultipleValueTypes).map((type) =>
+    this.create({ name: type })
+  );
+  const creatingScalarTypes = Object.values(SingleValueTypes).map((type) =>
+    this.create({ name: type })
+  );
   await Promise.all([...creatingEnumerationTypes, ...creatingScalarTypes]);
 });
 

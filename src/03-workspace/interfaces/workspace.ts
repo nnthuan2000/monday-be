@@ -1,4 +1,4 @@
-import { Model, Types } from 'mongoose';
+import { ClientSession, Model, Types } from 'mongoose';
 import { Doc, DocObj } from '../../root/app.interfaces';
 
 export interface IWorkspace {
@@ -13,6 +13,11 @@ export interface IWorkspace {
 /////////////////////////////////////
 /////////////////////////////////////
 
+export interface IDeleteWorkspace {
+  workspaceId: string;
+  session: ClientSession;
+}
+
 // For instance methods
 
 export type IWorkspaceDoc = Doc<IWorkspace, IWorkspaceMethods>;
@@ -21,4 +26,6 @@ export type IWorkspaceDocObj = DocObj<IWorkspace>;
 export interface IWorkspaceMethods {}
 
 // For statics
-export interface WorkspaceModel extends Model<IWorkspace, {}, IWorkspaceMethods> {}
+export interface WorkspaceModel extends Model<IWorkspace, {}, IWorkspaceMethods> {
+  deleteWorkspace({ workspaceId, session }: IDeleteWorkspace): Promise<null>;
+}

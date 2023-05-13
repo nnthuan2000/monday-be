@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "nodemon ./src/server.ts",
-    "import": "set STATUS=import&& ts-node ./src/04-column/helpers/importData.ts",
+    "import": "set STATUS=import&& ts-node ./src/05-column/helpers/importDataTypes.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

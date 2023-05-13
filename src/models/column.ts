@@ -3,11 +3,16 @@ import { Schema } from 'mongoose';
 import {
   ColumnModel,
   IColumn,
+  IColumnDoc,
   IColumnMethods,
   ICreateNewColumns,
-  IDeleteAllColumns,
+  IDeleteColumn,
 } from '../05-column/interfaces/column';
 import db from '../root/db';
+import Type from './type';
+import { MultipleValueTypes, SingleValueTypes } from '../05-column/constant';
+import Board from './board';
+import { BadRequestError } from '../root/responseHandler/error.response';
 
 const DOCUMENT_NAME = 'Column';
 const COLLECTION_NAME = 'Columns';
@@ -37,16 +42,80 @@ var columnSchema = new Schema<IColumn, ColumnModel, IColumnMethods>(
 
 columnSchema.static(
   'createNewColumns',
-  async function createNewColumns({ boardId, session }: ICreateNewColumns) {
-    // const foundStatusType = await Type.findOne({ name: MultipleValueTypes.STATUS }).lean();
-    // const foundDateType = await Type.findOne({ name: SingleValueTypes.DATE }).lean();
+  async function createNewColumns({
+    boardId,
+    typeDoc,
+    position,
+    session,
+  }: ICreateNewColumns): Promise<NonNullable<IColumnDoc>[]> {
+    let createdNewColumns: NonNullable<IColumnDoc>[];
+    if (typeDoc) {
+      createdNewColumns = await this.create(
+        [
+          {
+            name: typeDoc.name,
+            position: position,
+            belongType: typeDoc._id,
+          },
+        ],
+        { session }
+      );
+    } else {
+      const findingStatusType = Type.findOne({ name: MultipleValueTypes.STATUS }).lean();
+      const findingDateType = Type.findOne({ name: SingleValueTypes.DATE }).lean();
+      const [foundStatusType, foundDateType] = await Promise.all([
+        findingStatusType,
+        findingDateType,
+      ]);
+      createdNewColumns = await this.create(
+        [
+          {
+            name: foundStatusType!.name,
+            position: 1,
+            belongType: foundStatusType!._id,
+          },
+          {
+            name: foundDateType!.name,
+            position: 2,
+            belongType: foundDateType!._id,
+          },
+        ],
+        { session }
+      );
+    }
+
+    await Board.findByIdAndUpdate(
+      boardId,
+      {
+        $push: {
+          columns: { $each: createdNewColumns.map((column) => column._id) },
+        },
+      },
+      { session }
+    );
+
+    return createdNewColumns;
   }
 );
 
 columnSchema.static(
-  'deleteAllColumns',
-  async function deleteAllColumns({ boardId, session }: IDeleteAllColumns) {
-    // await this.deleteMany({ belongBoard: boardId }, { session });
+  'deleteColumn',
+  async function deleteColumn({ boardId, columnId, isSingle = false, session }: IDeleteColumn) {
+    const deletedColumn = await this.findByIdAndDelete(columnId, { session });
+    if (!deletedColumn) throw new BadRequestError('Column is not found');
+
+    if (isSingle) {
+      await Board.findByIdAndUpdate(
+        boardId,
+        {
+          $pull: {
+            columns: deletedColumn._id,
+          },
+        },
+        { session }
+      );
+    }
+    // Delete all values in this column
   }
 );
 

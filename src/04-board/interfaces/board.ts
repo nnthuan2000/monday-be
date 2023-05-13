@@ -1,6 +1,7 @@
 import { ClientSession, Model, Types } from 'mongoose';
 import { Doc, DocObj } from '../../root/app.interfaces';
 import { IWorkspaceDoc } from '../../03-workspace/interfaces/workspace';
+import { IColumnDoc } from '../../05-column/interfaces/column';
 
 export interface IBoard {
   name: string;
@@ -21,8 +22,8 @@ export interface ICreateNewBoard {
   session: ClientSession;
 }
 
-export interface IDeleteAllBoards {
-  boardIds: Types.ObjectId[];
+export interface IDeleteBoard {
+  boardId: Types.ObjectId | string;
   session: ClientSession;
 }
 
@@ -33,8 +34,12 @@ export type IBoardDocObj = DocObj<IBoard>;
 
 export interface IBoardMethods {}
 
+export type ICreateNewBoardResult = NonNullable<IBoardDoc> & {
+  columns: NonNullable<IColumnDoc>[];
+};
+
 // For statics
 export interface BoardModel extends Model<IBoard, {}, IBoardMethods> {
-  createNewBoard({ workspaceDoc, data, session }: ICreateNewBoard): Promise<IBoardDoc>;
-  deleteAllBoards({ boardIds, session }: IDeleteAllBoards): Promise<null>;
+  createNewBoard({ workspaceDoc, data, session }: ICreateNewBoard): Promise<ICreateNewBoardResult>;
+  deleteBoard({ boardId, session }: IDeleteBoard): Promise<null>;
 }

@@ -2,12 +2,14 @@ import { Schema } from 'mongoose';
 import {
   BoardModel,
   IBoard,
-  IBoardDoc,
   IBoardMethods,
   ICreateNewBoard,
-  IDeleteAllBoards,
+  ICreateNewBoardResult,
+  IDeleteBoard,
 } from '../04-board/interfaces/board';
 import db from '../root/db';
+import Column from './column';
+import { BadRequestError } from '../root/responseHandler/error.response';
 
 const DOCUMENT_NAME = 'Board';
 const COLLECTION_NAME = 'Boards';
@@ -63,7 +65,7 @@ boardSchema.static(
     workspaceDoc,
     data,
     session,
-  }: ICreateNewBoard): Promise<IBoardDoc> {
+  }: ICreateNewBoard): Promise<ICreateNewBoardResult> {
     const [createdNewBoard] = await this.create(
       [
         {
@@ -73,6 +75,7 @@ boardSchema.static(
       ],
       { session }
     );
+
     await workspaceDoc.updateOne({
       $push: {
         boards: createdNewBoard._id,
@@ -80,19 +83,32 @@ boardSchema.static(
     });
 
     // Create new 2 columns, 2 groups and each group will create 2 new task with default values of 2 created columns
+    const createdNewColumns = await Column.createNewColumns({
+      boardId: createdNewBoard._id,
+      session,
+    });
 
-    return createdNewBoard;
+    return {
+      ...createdNewBoard.toObject(),
+      columns: createdNewColumns,
+    } as ICreateNewBoardResult;
   }
 );
 
-boardSchema.static(
-  'deleteAllBoards',
-  async function deleteAllBoards({ boardIds, session }: IDeleteAllBoards) {
-    // Delete all columns and groups for each board
+boardSchema.static('deleteBoard', async function deleteBoard({ boardId, session }: IDeleteBoard) {
+  const foundBoard = await this.findById(boardId, {}, { session });
+  if (!foundBoard) throw new BadRequestError('Board is not found');
 
-    await this.deleteMany({ _id: { $in: boardIds } }, { session });
-  }
-);
+  // Delete all columns and groups for each board
+  const columnIds = foundBoard.columns;
+  const deleteColumnPromises = columnIds.map((columnId) =>
+    Column.deleteColumn({ boardId: foundBoard._id, columnId, session })
+  );
+
+  await Promise.all(deleteColumnPromises);
+
+  await foundBoard.deleteOne({ session });
+});
 
 //Export the model
 const Board = db.model<IBoard, BoardModel>(DOCUMENT_NAME, boardSchema);
