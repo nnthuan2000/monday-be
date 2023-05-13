@@ -12,6 +12,7 @@ import { Tokens } from './constant';
 import User from '../models/user';
 import UserProfile from '../models/userProfile';
 import { IUserDoc } from '../01-user/interfaces/user';
+import Workspace from '../models/workspace';
 
 export default class AccessService {
   static logout(res: Response) {
@@ -56,6 +57,12 @@ export default class AccessService {
         ],
         { session }
       );
+
+      await Workspace.create({
+        name: 'Main workspace',
+        isMain: true,
+        createdBy: newUser._id,
+      });
 
       //TODO 4: Create token -> send it to client
       return this.sendResToClient({ Doc: newUser, fields: ['_id', 'email', 'userProfile'] }, res);

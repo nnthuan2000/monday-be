@@ -29,7 +29,7 @@ export default class QueryTransform<T> {
     return this;
   }
 
-  limitFields(fields: { [k: string]: number }) {
+  limitFields(fields: string) {
     if (this.requestQuery.fields) {
       const fields = this.requestQuery.fields.split(',').join(' ');
       this.query = this.query.select(fields);
@@ -53,6 +53,6 @@ export default class QueryTransform<T> {
   }
 
   getQuery(): Query<T[], T> {
-    return this.query;
+    return this.query.lean();
   }
 }

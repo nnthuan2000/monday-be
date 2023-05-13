@@ -45,6 +45,7 @@ var workspaceSchema = new Schema<IWorkspace, WorkspaceModel, IWorkspaceMethods>(
 );
 
 workspaceSchema.index({ name: 'text' });
+
 //Export the model
 const Workspace = db.model<IWorkspace, WorkspaceModel>(DOCUMENT_NAME, workspaceSchema);
 export default Workspace;
