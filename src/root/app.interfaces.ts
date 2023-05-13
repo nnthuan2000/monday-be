@@ -1,6 +1,7 @@
 import { Request } from 'express';
 import { FlattenMaps, Types, Document } from 'mongoose';
 import { Fn } from './utils/catchAsync';
+import { IUserDoc } from '../01-user/interfaces/user';
 
 export type Doc<T, K> =
   | (Document<unknown, {}, T> & Omit<T & { _id: Types.ObjectId }, keyof K> & K)
@@ -22,7 +23,9 @@ export interface IRequestQuery {
   [key: string]: string;
 }
 
-
+export interface IRequestWithAuth extends Request {
+  user: NonNullable<IUserDoc>;
+}
 
 export interface IControllerWithoutGet<T extends Request> {
   createOne: Fn<T>;
