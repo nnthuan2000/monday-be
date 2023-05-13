@@ -1,5 +1,12 @@
 import { Schema } from 'mongoose';
-import { BoardModel, IBoard, IBoardMethods, IDeleteAllBoards } from '../04-board/interfaces/board';
+import {
+  BoardModel,
+  IBoard,
+  IBoardDoc,
+  IBoardMethods,
+  ICreateNewBoard,
+  IDeleteAllBoards,
+} from '../04-board/interfaces/board';
 import db from '../root/db';
 
 const DOCUMENT_NAME = 'Board';
@@ -23,6 +30,24 @@ var boardSchema = new Schema<IBoard, BoardModel, IBoardMethods>(
       required: true,
       ref: 'Workspace',
     },
+    groups: {
+      type: [
+        {
+          type: Schema.Types.ObjectId,
+          ref: 'Group',
+        },
+      ],
+      default: [],
+    },
+    columns: {
+      type: [
+        {
+          type: Schema.Types.ObjectId,
+          ref: 'Column',
+        },
+      ],
+      default: [],
+    },
   },
   {
     collection: COLLECTION_NAME,
@@ -33,8 +58,40 @@ var boardSchema = new Schema<IBoard, BoardModel, IBoardMethods>(
 boardSchema.index({ name: 'text' });
 
 boardSchema.static(
+  'createNewBoard',
+  async function createNewBoard({
+    workspaceDoc,
+    data,
+    session,
+  }: ICreateNewBoard): Promise<IBoardDoc> {
+    const [createdNewBoard] = await this.create(
+      [
+        {
+          ...data,
+          belongWorkspace: workspaceDoc._id,
+        },
+      ],
+      { session }
+    );
+    await workspaceDoc.updateOne({
+      $push: {
+        boards: createdNewBoard._id,
+      },
+    });
+
+    // Create new 2 columns, 2 groups and each group will create 2 new task with default values of 2 created columns
+
+    return createdNewBoard;
+  }
+);
+
+boardSchema.static(
   'deleteAllBoards',
-  async function deleteAllBoards({ workspaceId, session }: IDeleteAllBoards) {}
+  async function deleteAllBoards({ boardIds, session }: IDeleteAllBoards) {
+    // Delete all columns and groups for each board
+
+    await this.deleteMany({ _id: { $in: boardIds } }, { session });
+  }
 );
 
 //Export the model

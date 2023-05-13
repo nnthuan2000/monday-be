@@ -12,6 +12,7 @@ import {
 import QueryTransform from '../root/utils/queryTransform';
 import { IWorkspace } from './interfaces/workspace';
 import Workspace from '../models/workspace';
+import Board from '../models/board';
 
 export default class WorkspaceService {
   static async searchWorkspace({ keyString }: ISearchWorkspaceParams) {
@@ -55,10 +56,17 @@ export default class WorkspaceService {
   }
 
   static async getWorkspace({ workspaceId }: IGetWorkspaceParams) {
-    const foundWorkspace = await Workspace.findById(workspaceId).lean();
+    const foundWorkspace = await Workspace.findById(workspaceId)
+      .populate({
+        path: 'boards',
+        select: '_id name isCreatedView belongWorkspace',
+        options: {
+          sort: { updatedAt: -1 },
+          limit: 10,
+        },
+      })
+      .lean();
     if (!foundWorkspace) throw new BadRequestError('Workspace is not found');
-
-    // Get boards in this workspace
 
     return foundWorkspace;
   }
@@ -80,11 +88,13 @@ export default class WorkspaceService {
   }
 
   static async deleteWorkspace({ workspaceId }: IDeleteWorkspaceParams) {
+    const foundWorkspace = await Workspace.findById(workspaceId);
+    if (!foundWorkspace) throw new BadRequestError('Workspace is not found');
+    if (foundWorkspace.isMain) throw new BadRequestError(`This main workspace cant not deleted`);
     return await performTransaction(async (session) => {
-      const foundWorkspace = await Workspace.findById(workspaceId);
-      if (!foundWorkspace) throw new BadRequestError('Workspace is not found');
-      if (foundWorkspace.isMain) throw new BadRequestError(`This main workspace cant not deleted`);
       // Delete all boards in this workspace
+
+      await Board.deleteAllBoards({ boardIds: foundWorkspace.boards, session });
 
       await foundWorkspace.deleteOne({ session });
     });
