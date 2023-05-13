@@ -34,6 +34,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(compression());
 
 //* Init db
+import './db';
 
 //* Init routes
 app.use('/v1/api', router);
