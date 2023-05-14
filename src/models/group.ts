@@ -104,7 +104,7 @@ groupSchema.static(
     await Promise.all(deleteTaskPromises);
 
     if (boardId) {
-      await Board.findByIdAndUpdate(
+      const updatedBoard = await Board.findByIdAndUpdate(
         boardId,
         {
           $pull: {
@@ -113,6 +113,7 @@ groupSchema.static(
         },
         { session }
       );
+      if (!updatedBoard) throw new BadRequestError('Board is not found');
     }
   }
 );

@@ -104,7 +104,7 @@ columnSchema.static(
     const deletedColumn = await this.findByIdAndDelete(columnId, { session });
     if (!deletedColumn) throw new BadRequestError('Column is not found');
 
-    await Board.findByIdAndUpdate(
+    const updatedBoard = await Board.findByIdAndUpdate(
       boardId,
       {
         $pull: {
@@ -113,6 +113,8 @@ columnSchema.static(
       },
       { session }
     );
+    if (!updatedBoard) throw new BadRequestError('Board is not found');
+
     // Delete all values in this column
   }
 );

@@ -94,11 +94,12 @@ taskSchema.static(
     if (!deletedTask) throw new BadRequestError('Task is not found');
 
     if (groupId) {
-      await Group.findByIdAndUpdate(groupId, {
+      const updatedGroup = await Group.findByIdAndUpdate(groupId, {
         $pull: {
           tasks: deletedTask._id,
         },
       });
+      if (!updatedGroup) throw new BadRequestError('Group is not found');
     }
   }
 );

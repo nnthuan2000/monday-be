@@ -126,11 +126,12 @@ boardSchema.static(
     if (!deletedBoard) throw new BadRequestError('Board is not found');
 
     if (workspaceId) {
-      await Workspace.findByIdAndUpdate(workspaceId, {
+      const updatedWorkspace = await Workspace.findByIdAndUpdate(workspaceId, {
         $pull: {
           boards: deletedBoard._id,
         },
       });
+      if (!updatedWorkspace) throw new BadRequestError('Workspace is not found');
     }
 
     // Delete all columns and groups for each board
