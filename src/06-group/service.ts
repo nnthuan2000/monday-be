@@ -14,7 +14,6 @@ export default class GroupService {
   static async updateGroup({ groupId, updationData }: IUpdateGroupParams) {
     const updatedGroup = await Group.findByIdAndUpdate(groupId, updationData, { new: true }).lean();
     if (!updatedGroup) throw new BadRequestError('Group is not found');
-
     return updatedGroup;
   }
 
