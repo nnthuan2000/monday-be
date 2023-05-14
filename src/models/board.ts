@@ -10,6 +10,8 @@ import {
 import db from '../root/db';
 import Column from './column';
 import { BadRequestError } from '../root/responseHandler/error.response';
+import Group from './group';
+import { convertToArrObj } from '../root/utils';
 
 const DOCUMENT_NAME = 'Board';
 const COLLECTION_NAME = 'Boards';
@@ -83,30 +85,54 @@ boardSchema.static(
     });
 
     // Create new 2 columns, 2 groups and each group will create 2 new task with default values of 2 created columns
-    const createdNewColumns = await Column.createNewColumns({
+    const creatingNewColumnPromises = Column.createNewColumns({
       boardId: createdNewBoard._id,
       session,
     });
 
+    const creatingNewGroupPromises = Group.createNewGroups({
+      boardId: createdNewBoard._id,
+      session,
+    });
+
+    const [createdNewColumns, createdNewGroups] = await Promise.all([
+      creatingNewColumnPromises,
+      creatingNewGroupPromises,
+    ]);
+
+    await createdNewBoard.updateOne({
+      $push: {
+        columns: { $each: createdNewColumns.map((column) => column._id) },
+        groups: { $each: createdNewGroups.map((group) => group._id) },
+      },
+    });
+
     return {
       ...createdNewBoard.toObject(),
-      columns: createdNewColumns,
+      columns: convertToArrObj({ fields: ['_id', 'name', 'position'], objects: createdNewColumns }),
+      groups: convertToArrObj({
+        fields: ['_id', 'name', 'position', 'tasks'],
+        objects: createdNewGroups,
+      }),
     } as ICreateNewBoardResult;
   }
 );
 
 boardSchema.static('deleteBoard', async function deleteBoard({ boardId, session }: IDeleteBoard) {
-  const foundBoard = await this.findById(boardId, {}, { session });
+  const foundBoard = await this.findByIdAndDelete(boardId, { session });
   if (!foundBoard) throw new BadRequestError('Board is not found');
 
   // Delete all columns and groups for each board
+
   const deleteColumnPromises = foundBoard.columns.map((columnId) =>
-    Column.deleteColumn({ boardId: foundBoard._id, columnId, session })
+    Column.deleteColumn({ columnId, session })
   );
 
-  await Promise.all(deleteColumnPromises);
+  const deleteGroupPromises = foundBoard.groups.map((groupId) =>
+    Group.deleteGroup({ groupId, session })
+  );
 
-  await foundBoard.deleteOne({ session });
+  await Promise.all([...deleteColumnPromises, ...deleteGroupPromises]);
 });
 
 //Export the model

@@ -2,6 +2,7 @@ import { ClientSession, Model, Types } from 'mongoose';
 import { Doc, DocObj } from '../../root/app.interfaces';
 import { IWorkspaceDoc } from '../../03-workspace/interfaces/workspace';
 import { IColumnDoc } from '../../05-column/interfaces/column';
+import { IGroupDoc } from '../../06-group/interfaces/group';
 
 export interface IBoard {
   name: string;
@@ -36,6 +37,7 @@ export interface IBoardMethods {}
 
 export type ICreateNewBoardResult = NonNullable<IBoardDoc> & {
   columns: NonNullable<IColumnDoc>[];
+  groups: NonNullable<IGroupDoc>[];
 };
 
 // For statics

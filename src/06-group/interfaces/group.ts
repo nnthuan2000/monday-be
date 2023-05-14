@@ -1,5 +1,6 @@
 import { ClientSession, Model, Types } from 'mongoose';
 import { Doc, DocObj } from '../../root/app.interfaces';
+import { IColumnDoc } from '../../05-column/interfaces/column';
 
 export interface IGroup {
   name: string;
@@ -12,16 +13,16 @@ export interface IGroup {
 /////////////////////////////////////
 
 export interface ICreateNewGroups {
-  amount: number;
-  boardId: Types.ObjectId;
-  columnIds: Types.ObjectId[];
-  session: ClientSession | null;
+  boardId: Types.ObjectId | string;
+  data?: IGroup;
+  columns?: NonNullable<IColumnDoc>[];
+  session: ClientSession;
 }
 
 export interface IDeleteGroup {
-  boardId: Types.ObjectId | string;
+  boardId?: string;
   groupId: Types.ObjectId | string;
-  session: ClientSession | null;
+  session: ClientSession;
 }
 
 // For instance methods
@@ -34,9 +35,9 @@ export interface IGroupMethods {}
 // For statics
 export interface GroupModel extends Model<IGroup, {}, IGroupMethods> {
   createNewGroups({
-    amount,
     boardId,
-    columnIds,
+    data,
+    columns,
     session,
   }: ICreateNewGroups): Promise<NonNullable<IGroupDoc>[]>;
   deleteGroup({ boardId, session }: IDeleteGroup): Promise<null>;
