@@ -52,12 +52,14 @@ workspaceSchema.index({ name: 'text' });
 workspaceSchema.static(
   'deleteWorkspace',
   async function deleteWorkspace({ workspaceId, session }: IDeleteWorkspace) {
-    const foundWorkspace = await Workspace.findById(workspaceId);
-    if (!foundWorkspace) throw new BadRequestError('Workspace is not found');
-    if (foundWorkspace.isMain) throw new BadRequestError(`This main workspace cant not deleted`);
+    const deletedWorkspace = await this.findByIdAndDelete(workspaceId, { session });
+    if (!deletedWorkspace || deletedWorkspace.isMain)
+      throw new BadRequestError(
+        'Workspace is not found or this workspace is belong main workspace'
+      );
 
     // Delete all boards
-    const boardIds = foundWorkspace.boards;
+    const boardIds = deletedWorkspace.boards;
     const deleteBoardPromises = boardIds.map((boardId) => Board.deleteBoard({ boardId, session }));
     await Promise.all(deleteBoardPromises);
   }

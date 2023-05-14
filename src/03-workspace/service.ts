@@ -88,7 +88,6 @@ export default class WorkspaceService {
 
   static async deleteWorkspace({ workspaceId }: IDeleteWorkspaceParams) {
     return await performTransaction(async (session) => {
-      // Delete all boards in this workspace
       await Workspace.deleteWorkspace({ workspaceId, session });
     });
   }
