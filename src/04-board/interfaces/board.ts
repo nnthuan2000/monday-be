@@ -21,8 +21,9 @@ export interface ICreateNewBoard {
   session: ClientSession;
 }
 
-export interface IDeleteAllBoards {
-  boardIds: Types.ObjectId[];
+export interface IDeleteBoard {
+  workspaceId?: string;
+  boardId: Types.ObjectId | string;
   session: ClientSession;
 }
 
@@ -36,5 +37,5 @@ export interface IBoardMethods {}
 // For statics
 export interface BoardModel extends Model<IBoard, {}, IBoardMethods> {
   createNewBoard({ workspaceDoc, data, session }: ICreateNewBoard): Promise<IBoardDoc>;
-  deleteAllBoards({ boardIds, session }: IDeleteAllBoards): Promise<null>;
+  deleteBoard({ workspaceId, boardId, session }: IDeleteBoard): Promise<null>;
 }
