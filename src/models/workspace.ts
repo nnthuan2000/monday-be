@@ -1,10 +1,12 @@
 import { Schema } from 'mongoose';
 import {
+  IDeleteWorkspace,
   IWorkspace,
   IWorkspaceMethods,
   WorkspaceModel,
 } from '../03-workspace/interfaces/workspace';
 import db from '../root/db';
+import { BadRequestError } from '../root/responseHandler/error.response';
 
 const DOCUMENT_NAME = 'Workspace';
 const COLLECTION_NAME = 'Workspaces';
@@ -45,6 +47,17 @@ var workspaceSchema = new Schema<IWorkspace, WorkspaceModel, IWorkspaceMethods>(
 );
 
 workspaceSchema.index({ name: 'text' });
+
+workspaceSchema.static(
+  'deleteWorkspace',
+  async function deleteWorkspace({ workspaceId, session }: IDeleteWorkspace) {
+    const deletedWorkspace = await this.findByIdAndDelete(workspaceId, { session });
+    if (!deletedWorkspace || deletedWorkspace.isMain)
+      throw new BadRequestError(
+        'Workspace is not found or this workspace is belong main workspace'
+      );
+  }
+);
 
 //Export the model
 const Workspace = db.model<IWorkspace, WorkspaceModel>(DOCUMENT_NAME, workspaceSchema);

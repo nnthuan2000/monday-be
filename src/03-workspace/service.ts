@@ -81,12 +81,7 @@ export default class WorkspaceService {
 
   static async deleteWorkspace({ workspaceId }: IDeleteWorkspaceParams) {
     return await performTransaction(async (session) => {
-      const foundWorkspace = await Workspace.findById(workspaceId);
-      if (!foundWorkspace) throw new BadRequestError('Workspace is not found');
-      if (foundWorkspace.isMain) throw new BadRequestError(`This main workspace cant not deleted`);
-      // Delete all boards in this workspace
-
-      await foundWorkspace.deleteOne({ session });
+      await Workspace.deleteWorkspace({ workspaceId, session });
     });
   }
 }
