@@ -100,8 +100,7 @@ boardSchema.static('deleteBoard', async function deleteBoard({ boardId, session 
   if (!foundBoard) throw new BadRequestError('Board is not found');
 
   // Delete all columns and groups for each board
-  const columnIds = foundBoard.columns;
-  const deleteColumnPromises = columnIds.map((columnId) =>
+  const deleteColumnPromises = foundBoard.columns.map((columnId) =>
     Column.deleteColumn({ boardId: foundBoard._id, columnId, session })
   );
 

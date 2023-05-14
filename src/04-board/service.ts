@@ -45,19 +45,23 @@ export default class BoardService {
   }
 
   static async getBoard({ boardId }: IGetBoardParams) {
-    const foundBoard = await Board.findById(boardId).populate({
-      path: 'columns',
-      select: '_id name position',
-      options: {
-        sort: { position: 1 },
-      },
-    });
+    const foundBoard = await Board.findById(boardId)
+      .populate({
+        path: 'columns',
+        select: '_id name position',
+        options: {
+          sort: { position: 1 },
+        },
+      })
+      .populate({
+        path: 'groups',
+        select: '_id name position',
+        options: {
+          sort: { position: 1 },
+        },
+      })
+      .lean();
     if (!foundBoard) throw new BadRequestError('Board is not found');
-
-    //* Get all values of columns, groups, tasks and values
-    // Get all columns
-
-    // Get all groups
 
     return foundBoard;
   }
