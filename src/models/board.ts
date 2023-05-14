@@ -12,6 +12,7 @@ import Column from './column';
 import { BadRequestError } from '../root/responseHandler/error.response';
 import Group from './group';
 import { convertToArrObj } from '../root/utils';
+import Workspace from './workspace';
 
 const DOCUMENT_NAME = 'Board';
 const COLLECTION_NAME = 'Boards';
@@ -118,23 +119,34 @@ boardSchema.static(
   }
 );
 
-boardSchema.static('deleteBoard', async function deleteBoard({ boardId, session }: IDeleteBoard) {
-  const deletedBoard = await this.findByIdAndDelete(boardId, { session });
-  if (!deletedBoard) throw new BadRequestError('Board is not found');
+boardSchema.static(
+  'deleteBoard',
+  async function deleteBoard({ workspaceId, boardId, session }: IDeleteBoard) {
+    const deletedBoard = await this.findByIdAndDelete(boardId, { session });
+    if (!deletedBoard) throw new BadRequestError('Board is not found');
 
-  // Delete all columns and groups for each board
+    if (workspaceId) {
+      await Workspace.findByIdAndUpdate(workspaceId, {
+        $pull: {
+          boards: deletedBoard._id,
+        },
+      });
+    }
 
-  const deleteColumnsPromise = Column.deleteMany(
-    { _id: { $in: deletedBoard.columns } },
-    { session }
-  );
+    // Delete all columns and groups for each board
 
-  const deleteGroupPromises = deletedBoard.groups.map((groupId) =>
-    Group.deleteGroup({ groupId, session })
-  );
+    const deleteColumnsPromise = Column.deleteMany(
+      { _id: { $in: deletedBoard.columns } },
+      { session }
+    );
 
-  await Promise.all([...deleteGroupPromises, deleteColumnsPromise]);
-});
+    const deleteGroupPromises = deletedBoard.groups.map((groupId) =>
+      Group.deleteGroup({ groupId, session })
+    );
+
+    await Promise.all([...deleteGroupPromises, deleteColumnsPromise]);
+  }
+);
 
 //Export the model
 const Board = db.model<IBoard, BoardModel>(DOCUMENT_NAME, boardSchema);

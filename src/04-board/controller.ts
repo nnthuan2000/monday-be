@@ -71,6 +71,7 @@ class BoardController<T extends IRequestWithAuth> implements IBoardController<T>
 
   deleteOne: Fn<T> = catchAsync(async (req, res, next) => {
     await BoardService.deleteBoard({
+      workspaceId: req.params.workspaceId,
       boardId: req.params.id,
     });
     new OK({

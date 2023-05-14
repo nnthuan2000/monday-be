@@ -86,9 +86,9 @@ export default class BoardService {
     return updatedBoard;
   }
 
-  static async deleteBoard({ boardId }: IDeleteBoardParams) {
+  static async deleteBoard({ workspaceId, boardId }: IDeleteBoardParams) {
     return await performTransaction(async (session) => {
-      await Board.deleteBoard({ boardId: boardId, session });
+      await Board.deleteBoard({ workspaceId, boardId, session });
     });
   }
 }

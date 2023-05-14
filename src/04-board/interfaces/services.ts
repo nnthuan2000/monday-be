@@ -26,5 +26,6 @@ export interface IUpdateBoardParams {
 }
 
 export interface IDeleteBoardParams {
+  workspaceId: string;
   boardId: string;
 }
