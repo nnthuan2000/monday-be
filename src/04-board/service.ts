@@ -76,11 +76,9 @@ export default class BoardService {
     return updatedBoard;
   }
 
-  static async deleteBoard({ boardId }: IDeleteBoardParams) {
-    const foundBoard = await Board.findById(boardId).lean();
-    if (!foundBoard) throw new BadRequestError('Board is not found');
+  static async deleteBoard({ workspaceId, boardId }: IDeleteBoardParams) {
     return await performTransaction(async (session) => {
-      await Board.deleteAllBoards({ boardIds: [foundBoard._id], session });
+      await Board.deleteBoard({ workspaceId, boardId, session });
     });
   }
 }

@@ -5,9 +5,11 @@ import {
   IBoardDoc,
   IBoardMethods,
   ICreateNewBoard,
-  IDeleteAllBoards,
+  IDeleteBoard,
 } from '../04-board/interfaces/board';
 import db from '../root/db';
+import Workspace from './workspace';
+import { BadRequestError } from '../root/responseHandler/error.response';
 
 const DOCUMENT_NAME = 'Board';
 const COLLECTION_NAME = 'Boards';
@@ -86,11 +88,18 @@ boardSchema.static(
 );
 
 boardSchema.static(
-  'deleteAllBoards',
-  async function deleteAllBoards({ boardIds, session }: IDeleteAllBoards) {
+  'deleteBoard',
+  async function deleteBoard({ workspaceId, boardId, session }: IDeleteBoard) {
     // Delete all columns and groups for each board
-
-    await this.deleteMany({ _id: { $in: boardIds } }, { session });
+    const deletedBoard = await this.findByIdAndDelete(boardId, { session });
+    if (!deletedBoard) throw new BadRequestError('Board is not found');
+    if (workspaceId) {
+      await Workspace.findByIdAndUpdate(workspaceId, {
+        $pull: {
+          boards: deletedBoard._id,
+        },
+      });
+    }
   }
 );
 
