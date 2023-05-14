@@ -20,9 +20,8 @@ export interface ICreateNewColumns {
 }
 
 export interface IDeleteColumn {
-  boardId: Types.ObjectId | string;
+  boardId?: string;
   columnId: Types.ObjectId | string;
-  isSingle?: boolean;
   session: ClientSession;
 }
 
@@ -41,5 +40,5 @@ export interface ColumnModel extends Model<IColumn, {}, IColumnMethods> {
     position,
     session,
   }: ICreateNewColumns): Promise<NonNullable<IColumnDoc>[]>;
-  deleteColumn({ boardId, columnId, isSingle, session }: IDeleteColumn): Promise<null>;
+  deleteColumn({ boardId, columnId, session }: IDeleteColumn): Promise<null>;
 }

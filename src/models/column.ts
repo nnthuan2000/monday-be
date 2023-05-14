@@ -60,6 +60,16 @@ columnSchema.static(
         ],
         { session }
       );
+
+      await Board.findByIdAndUpdate(
+        boardId,
+        {
+          $push: {
+            columns: createdNewColumns[0]._id,
+          },
+        },
+        { session }
+      );
     } else {
       const findingStatusType = Type.findOne({ name: MultipleValueTypes.STATUS }).lean();
       const findingDateType = Type.findOne({ name: SingleValueTypes.DATE }).lean();
@@ -84,27 +94,17 @@ columnSchema.static(
       );
     }
 
-    await Board.findByIdAndUpdate(
-      boardId,
-      {
-        $push: {
-          columns: { $each: createdNewColumns.map((column) => column._id) },
-        },
-      },
-      { session }
-    );
-
     return createdNewColumns;
   }
 );
 
 columnSchema.static(
   'deleteColumn',
-  async function deleteColumn({ boardId, columnId, isSingle = false, session }: IDeleteColumn) {
+  async function deleteColumn({ boardId, columnId, session }: IDeleteColumn) {
     const deletedColumn = await this.findByIdAndDelete(columnId, { session });
     if (!deletedColumn) throw new BadRequestError('Column is not found');
 
-    if (isSingle) {
+    if (boardId) {
       await Board.findByIdAndUpdate(
         boardId,
         {
@@ -115,7 +115,6 @@ columnSchema.static(
         { session }
       );
     }
-    // Delete all values in this column
   }
 );
 
