@@ -77,7 +77,7 @@ columnSchema.static(
         findingStatusType,
         findingDateType,
       ]);
-      createdNewColumns = await this.create(
+      createdNewColumns = await this.insertMany(
         [
           {
             name: foundStatusType!.name,

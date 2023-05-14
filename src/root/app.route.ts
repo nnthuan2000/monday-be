@@ -6,6 +6,7 @@ import workspaceRouter from '../03-workspace/route';
 import boardRouter from '../04-board/route';
 import columnRouter from '../05-column/route';
 import groupRouter from '../06-group/route';
+import taskRouter from '../07-task/route';
 
 const router = Router();
 
@@ -27,5 +28,8 @@ router.use('', columnRouter);
 
 //* Group
 router.use('', groupRouter);
+
+//* Task
+router.use('', taskRouter);
 
 export default router;

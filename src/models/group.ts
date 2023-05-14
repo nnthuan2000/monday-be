@@ -10,6 +10,7 @@ import {
 import db from '../root/db';
 import Board from './board';
 import { BadRequestError } from '../root/responseHandler/error.response';
+import Task from './task';
 
 const DOCUMENT_NAME = 'Group';
 const COLLECTION_NAME = 'Groups';
@@ -57,23 +58,34 @@ groupSchema.static(
         { session }
       );
     } else {
-      createdNewGroups = await this.create(
-        [
-          {
-            name: 'New Group',
-            position: 1,
-          },
-          {
-            name: 'New Group',
-            position: 2,
-          },
-        ],
-        { session }
-      );
       //Create two new tasks and new values of these task with columns
+      let groupObjs: IGroup[] = [];
+      const tasksPerGroup = 2;
+      const createdNewTasks = await Task.createNewTasks({ columns, session });
+
+      for (let i = 0; i < createdNewTasks.length; i += tasksPerGroup) {
+        const tasksSlice = createdNewTasks.slice(i, i + tasksPerGroup);
+
+        const group: IGroup = {
+          name: `New Group`,
+          position: i / tasksPerGroup + 1,
+          tasks: tasksSlice.map((task) => task._id),
+        };
+
+        groupObjs.push(group);
+      }
+
+      createdNewGroups = await this.insertMany(groupObjs, { session });
     }
 
-    return createdNewGroups;
+    const groupPromises = createdNewGroups.map((group) =>
+      group.populate({
+        path: 'tasks',
+        select: '_id name position values',
+      })
+    );
+
+    return await Promise.all(groupPromises);
   }
 );
 
@@ -84,6 +96,12 @@ groupSchema.static(
     if (!deletedGroup) throw new BadRequestError('Group is not found');
 
     // Delete all tasks and values of each task in this group
+
+    const deleteTaskPromises = deletedGroup.tasks.map((task) =>
+      Task.deleteTask({ taskId: task._id, session })
+    );
+
+    await Promise.all(deleteTaskPromises);
 
     if (boardId) {
       await Board.findByIdAndUpdate(

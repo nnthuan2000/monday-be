@@ -4,8 +4,8 @@ import { IColumnDoc } from '../../05-column/interfaces/column';
 
 export interface ITask {
   name: string;
-  description?: string;
   position: number;
+  description?: string;
   values: Types.ObjectId[];
 }
 
@@ -14,13 +14,14 @@ export interface ITask {
 /////////////////////////////////////
 
 export interface ICreateNewTasks {
-  groupId?: Types.ObjectId | string;
-  columns: IColumnDoc[];
+  groupId?: string;
+  data?: ITask;
+  columns?: IColumnDoc[];
   session: ClientSession;
 }
 
 export interface IDeleteTask {
-  groupId: Types.ObjectId | string;
+  groupId?: string;
   taskId: Types.ObjectId | string;
   session: ClientSession;
 }
@@ -34,6 +35,11 @@ export interface ITaskMethods {}
 
 // For statics
 export interface TaskModel extends Model<ITask, {}, ITaskMethods> {
-  createNewTasks({ groupId, columns, session }: ICreateNewTasks): Promise<NonNullable<ITaskDoc>[]>;
+  createNewTasks({
+    groupId,
+    columns,
+    data,
+    session,
+  }: ICreateNewTasks): Promise<NonNullable<ITaskDoc>[]>;
   deleteTask({ groupId, taskId, session }: IDeleteTask): Promise<null>;
 }

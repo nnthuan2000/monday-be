@@ -59,6 +59,10 @@ export default class BoardService {
         options: {
           sort: { position: 1 },
         },
+        populate: {
+          path: 'tasks',
+          select: '_id name description position values',
+        },
       })
       .lean();
     if (!foundBoard) throw new BadRequestError('Board is not found');

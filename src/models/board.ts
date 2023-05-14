@@ -69,7 +69,7 @@ boardSchema.static(
     data,
     session,
   }: ICreateNewBoard): Promise<ICreateNewBoardResult> {
-    const [createdNewBoard] = await this.create(
+    const [createdNewBoard] = await this.insertMany(
       [
         {
           ...data,
