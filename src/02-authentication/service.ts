@@ -24,7 +24,7 @@ export default class AccessService {
     //TODO 1: Check email in dbs
     const foundUser = await User.findByEmail({ email });
 
-    if (!foundUser) throw new BadRequestError('Shop is not registered');
+    if (!foundUser) throw new BadRequestError('User is not registered');
 
     //TODO 2: Check match password
     const isMatchPassword = await foundUser.isMatchPassword(password);
