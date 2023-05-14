@@ -100,21 +100,19 @@ columnSchema.static(
 
 columnSchema.static(
   'deleteColumn',
-  async function deleteColumn({ boardId, columnId, isSingle = false, session }: IDeleteColumn) {
+  async function deleteColumn({ boardId, columnId, session }: IDeleteColumn) {
     const deletedColumn = await this.findByIdAndDelete(columnId, { session });
     if (!deletedColumn) throw new BadRequestError('Column is not found');
 
-    if (isSingle) {
-      await Board.findByIdAndUpdate(
-        boardId,
-        {
-          $pull: {
-            columns: deletedColumn._id,
-          },
+    await Board.findByIdAndUpdate(
+      boardId,
+      {
+        $pull: {
+          columns: deletedColumn._id,
         },
-        { session }
-      );
-    }
+      },
+      { session }
+    );
     // Delete all values in this column
   }
 );

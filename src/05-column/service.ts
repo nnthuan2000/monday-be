@@ -45,7 +45,6 @@ export default class ColumnService {
       await Column.deleteColumn({
         boardId,
         columnId,
-        isSingle: true,
         session,
       });
     });
