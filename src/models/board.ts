@@ -119,14 +119,17 @@ boardSchema.static(
 );
 
 boardSchema.static('deleteBoard', async function deleteBoard({ boardId, session }: IDeleteBoard) {
-  const foundBoard = await this.findByIdAndDelete(boardId, { session });
-  if (!foundBoard) throw new BadRequestError('Board is not found');
+  const deletedBoard = await this.findByIdAndDelete(boardId, { session });
+  if (!deletedBoard) throw new BadRequestError('Board is not found');
 
   // Delete all columns and groups for each board
 
-  const deleteColumnsPromise = Column.deleteMany({ _id: { $in: foundBoard.columns } }, { session });
+  const deleteColumnsPromise = Column.deleteMany(
+    { _id: { $in: deletedBoard.columns } },
+    { session }
+  );
 
-  const deleteGroupPromises = foundBoard.groups.map((groupId) =>
+  const deleteGroupPromises = deletedBoard.groups.map((groupId) =>
     Group.deleteGroup({ groupId, session })
   );
 
