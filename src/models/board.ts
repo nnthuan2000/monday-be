@@ -124,15 +124,13 @@ boardSchema.static('deleteBoard', async function deleteBoard({ boardId, session 
 
   // Delete all columns and groups for each board
 
-  const deleteColumnPromises = foundBoard.columns.map((columnId) =>
-    Column.deleteColumn({ columnId, session })
-  );
+  const deleteColumnsPromise = Column.deleteMany({ _id: { $in: foundBoard.columns } }, { session });
 
   const deleteGroupPromises = foundBoard.groups.map((groupId) =>
     Group.deleteGroup({ groupId, session })
   );
 
-  await Promise.all([...deleteColumnPromises, ...deleteGroupPromises]);
+  await Promise.all([...deleteGroupPromises, deleteColumnsPromise]);
 });
 
 //Export the model
