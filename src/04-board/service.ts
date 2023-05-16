@@ -62,6 +62,9 @@ export default class BoardService {
         populate: {
           path: 'tasks',
           select: '_id name description position values',
+          options: {
+            sort: { position: 1 },
+          },
           populate: {
             path: 'values',
             select: '_id value valueId typeOfValue belongColumn',

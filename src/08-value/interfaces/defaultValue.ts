@@ -5,6 +5,7 @@ import { MultipleValueTypes } from '../../05-column/constant';
 export interface IDefaultValue {
   value: string;
   color: string;
+  canEditColor: boolean;
   belongType: Types.ObjectId;
   belongBoard: Types.ObjectId;
   createdBy: Types.ObjectId;

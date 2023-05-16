@@ -11,7 +11,6 @@ import {
   ISetValueParams,
   IUpdateValueByTypeParams,
 } from './interfaces/services';
-import Task from '../models/task';
 import { SingleValueTypes } from '../05-column/constant';
 
 export default class ValueService {
@@ -48,53 +47,60 @@ export default class ValueService {
   }
 
   static async updateValueByType({ defaultValueId, updationData }: IUpdateValueByTypeParams) {
-    const updatedValue = await DefaultValue.findByIdAndUpdate(defaultValueId, updationData, {
-      new: true,
-    }).lean();
-    if (!updatedValue) throw new BadRequestError('Value is not found');
-    return updatedValue;
+    return await performTransaction(async (session) => {
+      const updatedValue = await DefaultValue.findByIdAndUpdate(defaultValueId, updationData, {
+        new: true,
+        session,
+      }).lean();
+      if (!updatedValue) throw new BadRequestError('Value is not found');
+      if (!updatedValue.canEditColor && updatedValue.color)
+        throw new BadRequestError(`This type can't edit color`);
+      return updatedValue;
+    });
   }
 
-  static async setValue({ taskId, columnId, tasksColumnsId, value, valueId }: ISetValueParams) {
+  static async setValue({ tasksColumnsId, value, valueId }: ISetValueParams) {
     if ((value && valueId) || (!value && !valueId))
       throw new BadRequestError('Invalid transmitted data');
     if (valueId) {
       const foundDefaultValue = await DefaultValue.findById(valueId).lean();
       if (!foundDefaultValue) throw new BadRequestError('Value is not found');
     }
-    return await performTransaction(async (session) => {
-      const setValue = await TasksColumns.findByIdAndUpdate(
-        tasksColumnsId,
-        {
-          $set: {
-            value: value,
-            valueId: valueId,
-            belongColumn: columnId,
-          },
-        },
-        {
-          upsert: true,
-          new: true,
-          session,
-        }
-      );
+    console.log(value, valueId, tasksColumnsId);
 
-      const updatedTask = await Task.findByIdAndUpdate(
-        taskId,
-        {
-          $addToSet: { values: setValue._id }, // Add the setValue._id to task.values if it doesn't already exist
-        },
-        { session }
-      );
-      if (!updatedTask) throw new BadRequestError('Task is not found');
-      return setValue;
+    const updatedTasksColumns = await TasksColumns.findByIdAndUpdate(tasksColumnsId, {
+      $set: {
+        value,
+        valueId,
+      },
     });
+    if (!updatedTasksColumns) throw new BadRequestError('This box is not found');
+    return updatedTasksColumns;
   }
 
   static async deleteValueByType({ defaultValueId }: IDeleteValueByTypeParams) {
     return await performTransaction(async (session) => {
       const deletedValue = await DefaultValue.findByIdAndDelete(defaultValueId, { session });
       if (!deletedValue) throw new BadRequestError('Value is not found');
+      if (!deletedValue.belongBoard)
+        throw new BadRequestError(`Default value of this type can't deleted`);
+
+      const foundBoardWithColumns = await Board.findById(deletedValue.belongBoard).populate({
+        path: 'columns',
+        select: '_id',
+      });
+
+      const foundAllTasksColumnsInBoard = await TasksColumns.find(
+        {
+          valueId: deletedValue._id,
+          belongColumn: { $in: foundBoardWithColumns?.columns },
+        },
+        {},
+        { session }
+      );
+
+      if (foundAllTasksColumnsInBoard.length !== 0)
+        throw new BadRequestError(`You can't delete value while in use`);
       return deletedValue;
     });
   }

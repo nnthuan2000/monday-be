@@ -19,8 +19,6 @@ export interface IUpdateValueByTypeParams {
 }
 
 export interface ISetValueParams {
-  columnId: string;
-  taskId: string;
   valueId?: string;
   value?: string;
   tasksColumnsId: string;

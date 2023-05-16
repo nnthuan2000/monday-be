@@ -23,6 +23,10 @@ var defaultValueSchema = new Schema<IDefaultValue, DefaultValueModel, IDefaultVa
       required: true,
       default: '#797e93',
     },
+    canEditColor: {
+      type: Boolean,
+      default: true,
+    },
     belongType: {
       type: Schema.Types.ObjectId,
       ref: 'Type',
@@ -50,6 +54,7 @@ defaultValueSchema.static(
     const createdType = await Type.create({ name: type });
     await this.create({
       belongType: createdType._id,
+      canEditColor: false,
     });
   }
 );

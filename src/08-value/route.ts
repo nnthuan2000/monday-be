@@ -13,9 +13,6 @@ valueRouter
   .get(valueController.getAll as any)
   .post(valueController.createOne as any);
 
-valueRouter.patch(
-  '/task/:taskId/column/:columnId/tasksColumns/:id',
-  valueController.selectValue as any
-);
+valueRouter.patch('/tasksColumns/:id', valueController.selectValue as any);
 
 export default valueRouter;
