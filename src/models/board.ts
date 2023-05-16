@@ -13,6 +13,7 @@ import { BadRequestError } from '../root/responseHandler/error.response';
 import Group from './group';
 import { convertToArrObj } from '../root/utils';
 import Workspace from './workspace';
+import DefaultValue from './defaultValue';
 
 const DOCUMENT_NAME = 'Board';
 const COLLECTION_NAME = 'Boards';
@@ -151,7 +152,12 @@ boardSchema.static(
       Group.deleteGroup({ groupId, session })
     );
 
-    await Promise.all([...deleteGroupPromises, deleteColumnsPromise]);
+    const deleteAllDefaultValue = DefaultValue.deleteMany(
+      { belongBoard: deletedBoard._id },
+      { session }
+    );
+
+    await Promise.all([...deleteGroupPromises, deleteColumnsPromise, deleteAllDefaultValue]);
   }
 );
 
