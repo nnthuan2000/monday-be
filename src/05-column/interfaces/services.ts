@@ -2,6 +2,10 @@ import { IColumn } from './column';
 
 export interface IGetAllTypesParams {}
 
+export interface IGetAllColumnsByBoard {
+  boardId: string;
+}
+
 export interface ICreateColumnParams {
   boardId: string;
   typeId: string;

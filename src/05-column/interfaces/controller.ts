@@ -1,7 +1,7 @@
 import { Request } from 'express';
 import { Fn } from '../../root/utils/catchAsync';
-import { IControllerWithoutGet } from '../../root/app.interfaces';
+import { IFullController } from '../../root/app.interfaces';
 
-export interface IColumnController<T extends Request> extends IControllerWithoutGet<T> {
+export interface IColumnController<T extends Request> extends IFullController<T> {
   getAllTypes: Fn<T>;
 }
