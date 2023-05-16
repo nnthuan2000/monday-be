@@ -109,7 +109,10 @@ boardSchema.static(
 
     return {
       ...createdNewBoard.toObject(),
-      columns: convertToArrObj({ fields: ['_id', 'name', 'position'], objects: createdNewColumns }),
+      columns: convertToArrObj({
+        fields: ['_id', 'name', 'position', 'belongType'],
+        objects: createdNewColumns,
+      }),
       groups: convertToArrObj({
         fields: ['_id', 'name', 'position', 'tasks'],
         objects: createdNewGroups,

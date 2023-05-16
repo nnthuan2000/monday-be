@@ -2,7 +2,8 @@ import { Model, Types } from 'mongoose';
 import { Doc, DocObj } from '../../root/app.interfaces';
 
 export interface ITasksColumns {
-  value: Types.ObjectId;
+  value: string;
+  valueId: Types.ObjectId;
   typeOfValue: string;
   belongColumn: Types.ObjectId;
 }

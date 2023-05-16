@@ -13,7 +13,11 @@ const COLLECTION_NAME = 'TasksColumnss';
 var tasksColumnsSchema = new Schema<ITasksColumns, TasksColumnsModel, ITasksColumnsMethods>(
   {
     value: {
-      type: Schema.Types.Mixed,
+      type: String,
+      default: null,
+    },
+    valueId: {
+      type: Schema.Types.ObjectId,
       ref: 'DefaultValue',
       default: null,
     },

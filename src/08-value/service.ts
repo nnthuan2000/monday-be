@@ -1,4 +1,3 @@
-import { Types } from 'mongoose';
 import Board from '../models/board';
 import DefaultValue from '../models/defaultValue';
 import TasksColumns from '../models/tasksColumns';
@@ -12,19 +11,20 @@ import {
   ISetValueParams,
   IUpdateValueByTypeParams,
 } from './interfaces/services';
-import Column from '../models/column';
 import Task from '../models/task';
 import { SingleValueTypes } from '../05-column/constant';
 
 export default class ValueService {
-  static async getAllValuesByType({ boardId, columnId }: IGetAllValuesByTypeParams) {
-    const foundColumn = await Column.findById(columnId).lean();
-    if (!foundColumn) throw new BadRequestError('Column is not found');
+  static async getAllValuesByType({ boardId, typeId }: IGetAllValuesByTypeParams) {
+    const foundType = await Type.findById(typeId);
+    if (!foundType) throw new BadRequestError('Type is not found');
 
     const foundAllValues = await DefaultValue.find({
-      belongBoard: boardId,
-      belongType: foundColumn.belongType,
-    }).lean();
+      belongBoard: { $in: [boardId, null] },
+      belongType: foundType._id,
+    })
+      .select('_id value color')
+      .lean();
     return foundAllValues;
   }
 
@@ -58,18 +58,17 @@ export default class ValueService {
   static async setValue({ taskId, columnId, tasksColumnsId, value, valueId }: ISetValueParams) {
     if ((value && valueId) || (!value && !valueId))
       throw new BadRequestError('Invalid transmitted data');
-    let valueToset: string | Types.ObjectId | undefined = value;
     if (valueId) {
       const foundDefaultValue = await DefaultValue.findById(valueId).lean();
       if (!foundDefaultValue) throw new BadRequestError('Value is not found');
-      valueToset = foundDefaultValue._id;
     }
     return await performTransaction(async (session) => {
       const setValue = await TasksColumns.findByIdAndUpdate(
         tasksColumnsId,
         {
           $set: {
-            value: valueToset,
+            value: value,
+            valueId: valueId,
             belongColumn: columnId,
           },
         },

@@ -35,7 +35,8 @@ export const createSetOfTasksColumns = async (
     const createdNewTasksColumns = await TasksColumns.create(
       [
         {
-          value: value ? value._id : value,
+          value: value ? null : value,
+          valueId: value ? value._id : null,
           belongColumn: columns[i],
           typeOfValue: value ? 'multiple' : 'single',
         },

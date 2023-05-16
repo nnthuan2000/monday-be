@@ -3,7 +3,7 @@ import { IDefaultValue } from './defaultValue';
 
 export interface IGetAllValuesByTypeParams {
   boardId: string;
-  columnId: string;
+  typeId: string;
 }
 
 export interface ICreateValueByTypeParams {

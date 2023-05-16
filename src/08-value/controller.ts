@@ -9,7 +9,7 @@ class ValueController<T extends IRequestWithAuth> implements IFullController<T> 
   getAll: Fn<T> = catchAsync(async (req, res, next) => {
     const valuesByType = await ValueService.getAllValuesByType({
       boardId: req.params.boardId,
-      columnId: req.params.columnId,
+      typeId: req.params.typeId,
     });
 
     new OK({

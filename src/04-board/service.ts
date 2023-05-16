@@ -48,7 +48,7 @@ export default class BoardService {
     const foundBoard = await Board.findById(boardId)
       .populate({
         path: 'columns',
-        select: '_id name position',
+        select: '_id name position belongType',
         options: {
           sort: { position: 1 },
         },
@@ -64,11 +64,10 @@ export default class BoardService {
           select: '_id name description position values',
           populate: {
             path: 'values',
-            select: '_id value typeOfValue belongColumn',
+            select: '_id value valueId typeOfValue belongColumn',
             populate: {
-              path: 'value',
+              path: 'valueId',
               select: '_id value color',
-              transform: (doc, value) => (doc === null ? value : doc),
             },
           },
         },

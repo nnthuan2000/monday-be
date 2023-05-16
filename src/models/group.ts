@@ -85,11 +85,10 @@ groupSchema.static(
         select: '_id name description position values',
         populate: {
           path: 'values',
-          select: '_id value typeOfValue belongColumn',
+          select: '_id value valueId typeOfValue belongColumn',
           populate: {
-            path: 'value',
+            path: 'valueId',
             select: '_id value color',
-            transform: (doc, value) => (doc === null ? value : doc),
           },
         },
       })
