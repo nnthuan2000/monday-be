@@ -1,3 +1,4 @@
+import Board from '../models/board';
 import Column from '../models/column';
 import Type from '../models/type';
 import { BadRequestError } from '../root/responseHandler/error.response';
@@ -5,6 +6,7 @@ import { performTransaction } from '../root/utils/performTransaction';
 import {
   ICreateColumnParams,
   IDeleteColumnParams,
+  IGetAllColumnsByBoard,
   IUpdateColumnParams,
 } from './interfaces/services';
 
@@ -12,6 +14,18 @@ export default class ColumnService {
   static async getAllTypes() {
     const foundAllTypes = await Type.find({}).lean();
     return foundAllTypes;
+  }
+
+  static async getAllColumnsByBoard({ boardId }: IGetAllColumnsByBoard) {
+    const foundBoard = await Board.findById(boardId).populate({
+      path: 'columns',
+      select: '_id name position',
+      options: {
+        sort: { position: 1 },
+      },
+    });
+    if (!foundBoard) throw new BadRequestError('Board is not found');
+    return foundBoard.columns;
   }
 
   static async createColumn({ boardId, typeId, position }: ICreateColumnParams) {

@@ -5,6 +5,20 @@ import { IColumnController } from './interfaces/controller';
 import ColumnService from './service';
 
 class ColumnController<T extends IRequestWithAuth> implements IColumnController<T> {
+  getOne: Fn<T> = catchAsync(async (req, res, next) => {});
+
+  getAll: Fn<T> = catchAsync(async (req, res, next) => {
+    const foundAllColumns = await ColumnService.getAllColumnsByBoard({
+      boardId: req.params.boardId,
+    });
+    new OK({
+      message: 'Get all columns successfully',
+      metadata: {
+        columns: foundAllColumns,
+      },
+    }).send(res);
+  });
+
   getAllTypes: Fn<T> = catchAsync(async (req, res, next) => {
     const foundAllTypes = await ColumnService.getAllTypes();
     new OK({
