@@ -8,7 +8,6 @@ import {
 } from '../08-value/interfaces/tasksColumns';
 import { ITaskDoc } from '../07-task/interfaces/task';
 import { createSetOfTasksColumnsByColumn } from '../root/utils';
-import DefaultValue from './defaultValue';
 import { performTransaction } from '../root/utils/performTransaction';
 
 const DOCUMENT_NAME = 'TasksColumns';
@@ -46,7 +45,7 @@ tasksColumnsSchema.static(
   async function createTasksColumnsByColumn({
     boardDoc,
     columnDoc,
-    typeDoc,
+    defaultValue,
   }: ICreateTasksColumnsByColumn) {
     const boardWithGroups = await boardDoc.populate({
       path: 'groups',
@@ -54,8 +53,6 @@ tasksColumnsSchema.static(
         path: 'tasks',
       },
     });
-
-    const foundDefaultValue = await DefaultValue.findOne({ belongType: typeDoc._id });
 
     const tasks = boardWithGroups.groups.reduce(
       (currTasks: NonNullable<ITaskDoc>[], group: any) => {
@@ -69,15 +66,15 @@ tasksColumnsSchema.static(
       const updatingTaskPromises = tasks.map((task) =>
         createSetOfTasksColumnsByColumn({
           columnId: columnDoc._id,
-          defaultValue: foundDefaultValue,
+          defaultValue,
           taskDoc: task,
-          typeOfValue: foundDefaultValue ? 'multiple' : 'single',
+          typeOfValue: defaultValue ? 'multiple' : 'single',
           session,
         })
       );
 
-      const updatedTasks = await Promise.all(updatingTaskPromises);
-      return updatedTasks;
+      const tasksColumnsIds = await Promise.all(updatingTaskPromises);
+      return tasksColumnsIds;
     });
   }
 );

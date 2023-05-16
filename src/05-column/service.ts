@@ -27,7 +27,7 @@ export default class ColumnService {
     if (!foundType) throw new BadRequestError('Type is not found');
 
     return await performTransaction<ICreateColumnResult>(async (session) => {
-      const { createdNewColumns, updatedTasks } = await Column.createNewColumns({
+      const { createdNewColumns, defaultValue, tasksColumnsIds } = await Column.createNewColumns({
         boardId,
         typeDoc: foundType,
         position: position,
@@ -35,7 +35,8 @@ export default class ColumnService {
       });
       return {
         createdNewColumn: createdNewColumns[0],
-        tasks: updatedTasks,
+        defaultValue,
+        tasksColumnsIds,
       };
     });
   }

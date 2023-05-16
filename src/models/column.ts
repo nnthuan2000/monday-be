@@ -15,6 +15,7 @@ import { MultipleValueTypes, SingleValueTypes } from '../05-column/constant';
 import Board from './board';
 import { BadRequestError } from '../root/responseHandler/error.response';
 import TasksColumns from './tasksColumns';
+import DefaultValue from './defaultValue';
 
 const DOCUMENT_NAME = 'Column';
 const COLLECTION_NAME = 'Columns';
@@ -74,15 +75,22 @@ columnSchema.static(
       );
       if (!updatedBoard) throw new BadRequestError('Board is not found');
 
-      const updatedTasks = await TasksColumns.createTasksColumnsByColumn({
+      const foundDefaultValue = await DefaultValue.findOne(
+        { belongType: typeDoc._id },
+        {},
+        { session }
+      ).select('_id value color');
+
+      const tasksColumnsIds = await TasksColumns.createTasksColumnsByColumn({
         boardDoc: updatedBoard,
         columnDoc: createdNewColumns[0],
-        typeDoc,
+        defaultValue: foundDefaultValue,
       });
 
       return {
         createdNewColumns,
-        updatedTasks,
+        defaultValue: foundDefaultValue,
+        tasksColumnsIds,
       };
 
       ////

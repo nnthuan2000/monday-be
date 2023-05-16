@@ -83,4 +83,5 @@ export const createSetOfTasksColumnsByColumn = async ({
     },
     { session }
   );
+  return createdNewTasksColumns._id;
 };

@@ -1,9 +1,8 @@
 import { Model, Types } from 'mongoose';
 import { Doc, DocObj } from '../../root/app.interfaces';
 import { IBoardDoc } from '../../04-board/interfaces/board';
-import { ITypeDoc } from '../../05-column/interfaces/type';
 import { IColumnDoc } from '../../05-column/interfaces/column';
-import { ITaskDoc } from '../../07-task/interfaces/task';
+import { IDefaultValueDoc } from './defaultValue';
 
 export interface ITasksColumns {
   value: string;
@@ -19,7 +18,7 @@ export interface ITasksColumns {
 export interface ICreateTasksColumnsByColumn {
   boardDoc: NonNullable<IBoardDoc>;
   columnDoc: NonNullable<IColumnDoc>;
-  typeDoc: NonNullable<ITypeDoc>;
+  defaultValue: IDefaultValueDoc;
 }
 
 // For instance methods
@@ -34,6 +33,6 @@ export interface TasksColumnsModel extends Model<ITasksColumns, {}, ITasksColumn
   createTasksColumnsByColumn({
     boardDoc,
     columnDoc,
-    typeDoc,
-  }: ICreateTasksColumnsByColumn): Promise<NonNullable<ITaskDoc>[]>;
+    defaultValue,
+  }: ICreateTasksColumnsByColumn): Promise<Types.ObjectId[]>;
 }

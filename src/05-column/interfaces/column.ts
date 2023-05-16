@@ -1,7 +1,7 @@
 import { ClientSession, Model, Types } from 'mongoose';
 import { Doc, DocObj } from '../../root/app.interfaces';
 import { ITypeDoc } from './type';
-import { ITaskDoc } from '../../07-task/interfaces/task';
+import { IDefaultValue } from '../../08-value/interfaces/defaultValue';
 
 export interface IColumn {
   name: string;
@@ -22,7 +22,8 @@ export interface ICreateNewColumns {
 
 export interface ICreateNewColumnsResult {
   createdNewColumns: NonNullable<IColumnDoc>[];
-  updatedTasks?: NonNullable<ITaskDoc>[];
+  defaultValue?: IDefaultValue | null;
+  tasksColumnsIds?: Types.ObjectId[];
 }
 
 export interface IDeleteColumn {
