@@ -12,6 +12,7 @@ import Group from './group';
 import { BadRequestError } from '../root/responseHandler/error.response';
 import DefaultValue from './defaultValue';
 import { createSetOfTasksColumns } from '../root/utils';
+import TasksColumns from './tasksColumns';
 
 const DOCUMENT_NAME = 'Task';
 const COLLECTION_NAME = 'Tasks';
@@ -59,8 +60,14 @@ taskSchema.static(
     const foundDefaultValues = await Promise.all(findingDefaulValuePromises);
 
     let createdNewTasks: NonNullable<ITaskDoc>[];
-    if (groupId) {
-      createdNewTasks = await this.create([{ ...data }], { session });
+    if (groupId && data) {
+      const task: ITask = {
+        name: data.name,
+        position: data.position,
+        values: await createSetOfTasksColumns(foundDefaultValues, columns, session),
+      };
+
+      createdNewTasks = await this.create([{ ...task }], { session });
       await Group.findByIdAndUpdate(
         groupId,
         {
@@ -70,10 +77,14 @@ taskSchema.static(
         },
         { session }
       );
-      return {
-        createdNewTasks,
-        defaultValues: foundDefaultValues,
-      };
+      return await createdNewTasks[0].populate({
+        path: 'values',
+        select: '_id value valueId belongColumn typeOfValue',
+        populate: {
+          path: 'valueId',
+          select: '_id value color',
+        },
+      });
     } else {
       const taskObjs: ITask[] = [
         { name: 'Task 1', position: 1, values: [] },
@@ -88,7 +99,7 @@ taskSchema.static(
 
       createdNewTasks = await this.insertMany(taskObjs, { session });
     }
-    return { createdNewTasks };
+    return createdNewTasks;
   }
 );
 
@@ -106,6 +117,8 @@ taskSchema.static(
       });
       if (!updatedGroup) throw new BadRequestError('Group is not found');
     }
+
+    await TasksColumns.deleteMany({ _id: { $in: deletedTask.values } }, { session });
   }
 );
 

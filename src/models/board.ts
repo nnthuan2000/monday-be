@@ -89,7 +89,7 @@ boardSchema.static(
     );
 
     // Create new 2 columns, 2 groups and each group will create 2 new task with default values of 2 created columns
-    const createdNewColumns = await Column.createNewColumns({
+    const { createdNewColumns } = await Column.createNewColumns({
       boardId: createdNewBoard._id,
       session,
     });

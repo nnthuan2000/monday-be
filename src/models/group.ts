@@ -63,7 +63,7 @@ groupSchema.static(
     //Create two new tasks and new values of these task with columns
     let groupObjs: IGroup[] = [];
     const tasksPerGroup = 2;
-    const { createdNewTasks } = await Task.createNewTasks({ columns, session });
+    const createdNewTasks = await Task.createNewTasks({ columns, session });
 
     for (let i = 0; i < createdNewTasks.length; i += tasksPerGroup) {
       const tasksSlice = createdNewTasks.slice(i, i + tasksPerGroup);

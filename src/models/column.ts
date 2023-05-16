@@ -6,6 +6,7 @@ import {
   IColumnDoc,
   IColumnMethods,
   ICreateNewColumns,
+  ICreateNewColumnsResult,
   IDeleteColumn,
 } from '../05-column/interfaces/column';
 import db from '../root/db';
@@ -13,6 +14,7 @@ import Type from './type';
 import { MultipleValueTypes, SingleValueTypes } from '../05-column/constant';
 import Board from './board';
 import { BadRequestError } from '../root/responseHandler/error.response';
+import TasksColumns from './tasksColumns';
 
 const DOCUMENT_NAME = 'Column';
 const COLLECTION_NAME = 'Columns';
@@ -47,7 +49,7 @@ columnSchema.static(
     typeDoc,
     position,
     session,
-  }: ICreateNewColumns): Promise<NonNullable<IColumnDoc>[]> {
+  }: ICreateNewColumns): Promise<ICreateNewColumnsResult> {
     let createdNewColumns: NonNullable<IColumnDoc>[];
     if (typeDoc) {
       createdNewColumns = await this.create(
@@ -71,6 +73,17 @@ columnSchema.static(
         { session }
       );
       if (!updatedBoard) throw new BadRequestError('Board is not found');
+
+      const updatedTasks = await TasksColumns.createTasksColumnsByColumn({
+        boardDoc: updatedBoard,
+        columnDoc: createdNewColumns[0],
+        typeDoc,
+      });
+
+      return {
+        createdNewColumns,
+        updatedTasks,
+      };
 
       ////
     } else {
@@ -97,7 +110,7 @@ columnSchema.static(
       );
     }
 
-    return createdNewColumns;
+    return { createdNewColumns };
   }
 );
 
@@ -119,6 +132,7 @@ columnSchema.static(
     if (!updatedBoard) throw new BadRequestError('Board is not found');
 
     // Delete all values in this column
+    await TasksColumns.deleteMany({ belongColumn: deletedColumn._id }, { session });
   }
 );
 

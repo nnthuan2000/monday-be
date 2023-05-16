@@ -1,5 +1,4 @@
 import Column from '../models/column';
-import DefaultValue from '../models/defaultValue';
 import Type from '../models/type';
 import { BadRequestError } from '../root/responseHandler/error.response';
 import { performTransaction } from '../root/utils/performTransaction';
@@ -23,28 +22,20 @@ export default class ColumnService {
   }: ICreateColumnParams): Promise<ICreateColumnResult> {
     if (!typeId || !position)
       throw new BadRequestError('Missing some fields to create a new column');
-    const findingTypePromise = Type.findById(typeId);
-    const findingDefaultValuePromise = DefaultValue.findOne({
-      belongType: typeId,
-    }).select('value color');
-    const [foundType, foundDefaultValue] = await Promise.all([
-      findingTypePromise,
-      findingDefaultValuePromise,
-    ]);
+    const foundType = await Type.findById(typeId);
+
     if (!foundType) throw new BadRequestError('Type is not found');
-    if (!foundDefaultValue) throw new Error('Default value of this type is not found');
-    console.log(foundDefaultValue);
 
     return await performTransaction<ICreateColumnResult>(async (session) => {
-      const [createdNewColumn] = await Column.createNewColumns({
+      const { createdNewColumns, updatedTasks } = await Column.createNewColumns({
         boardId,
         typeDoc: foundType,
         position: position,
         session,
       });
       return {
-        createdNewColumn,
-        defaultValue: foundDefaultValue,
+        createdNewColumn: createdNewColumns[0],
+        tasks: updatedTasks,
       };
     });
   }

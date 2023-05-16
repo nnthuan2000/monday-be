@@ -3,6 +3,7 @@ import { IDefaultValueDoc } from '../../08-value/interfaces/defaultValue';
 import TasksColumns from '../../models/tasksColumns';
 import { IColumnDoc } from '../../05-column/interfaces/column';
 import { ClientSession, Types } from 'mongoose';
+import { ITaskDoc } from '../../07-task/interfaces/task';
 
 interface IGetInfoParams<T> {
   fields: string[];
@@ -46,4 +47,40 @@ export const createSetOfTasksColumns = async (
     result.push(createdNewTasksColumns[0]._id);
   }
   return result;
+};
+
+interface ICreateSetOfTasksColumnsByColumn {
+  taskDoc: NonNullable<ITaskDoc>;
+  columnId: Types.ObjectId;
+  typeOfValue: string;
+  defaultValue: NonNullable<IDefaultValueDoc> | null;
+  session: ClientSession;
+}
+
+export const createSetOfTasksColumnsByColumn = async ({
+  columnId,
+  defaultValue,
+  taskDoc,
+  typeOfValue,
+  session,
+}: ICreateSetOfTasksColumnsByColumn) => {
+  const [createdNewTasksColumns] = await TasksColumns.create(
+    [
+      {
+        value: null,
+        valueId: defaultValue ? defaultValue._id : null,
+        belongColumn: columnId,
+        typeOfValue,
+      },
+    ],
+    { session }
+  );
+  await taskDoc.updateOne(
+    {
+      $push: {
+        values: createdNewTasksColumns._id,
+      },
+    },
+    { session }
+  );
 };
