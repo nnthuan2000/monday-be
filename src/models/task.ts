@@ -10,6 +10,8 @@ import {
 import db from '../root/db';
 import Group from './group';
 import { BadRequestError } from '../root/responseHandler/error.response';
+import DefaultValue from './defaultValue';
+import { createSetOfTasksColumns } from '../root/utils';
 
 const DOCUMENT_NAME = 'Task';
 const COLLECTION_NAME = 'Tasks';
@@ -32,7 +34,7 @@ var taskSchema = new Schema<ITask, TaskModel, ITaskMethods>(
       type: [
         {
           type: Schema.Types.ObjectId,
-          ref: 'Value',
+          ref: 'TasksColumns',
         },
       ],
       default: [],
@@ -47,6 +49,15 @@ var taskSchema = new Schema<ITask, TaskModel, ITaskMethods>(
 taskSchema.static(
   'createNewTasks',
   async function createNewTasks({ groupId, data, columns, session }: ICreateNewTasks) {
+    // Get all values default of these columns
+    const findingDefaulValuePromises = columns.map((column) =>
+      DefaultValue.findOne({ belongType: column.belongType }, {}, { session }).select(
+        '_id value color'
+      )
+    );
+
+    const foundDefaultValues = await Promise.all(findingDefaulValuePromises);
+
     let createdNewTasks: NonNullable<ITaskDoc>[];
     if (groupId) {
       createdNewTasks = await this.create([{ ...data }], { session });
@@ -59,31 +70,25 @@ taskSchema.static(
         },
         { session }
       );
+      return {
+        createdNewTasks,
+        defaultValues: foundDefaultValues,
+      };
     } else {
-      // Get all values default of these columns
-      createdNewTasks = await this.insertMany(
-        [
-          {
-            name: 'Task 1',
-            position: 1,
-          },
-          {
-            name: 'Task 2',
-            position: 2,
-          },
-          {
-            name: 'Task 1',
-            position: 1,
-          },
-          {
-            name: 'Task 2',
-            position: 2,
-          },
-        ],
-        { session }
-      );
+      const taskObjs: ITask[] = [
+        { name: 'Task 1', position: 1, values: [] },
+        { name: 'Task 2', position: 2, values: [] },
+        { name: 'Task 1', position: 1, values: [] },
+        { name: 'Task 2', position: 2, values: [] },
+      ];
+
+      for (const task of taskObjs) {
+        task.values = await createSetOfTasksColumns(foundDefaultValues, columns, session);
+      }
+
+      createdNewTasks = await this.insertMany(taskObjs, { session });
     }
-    return createdNewTasks;
+    return { createdNewTasks };
   }
 );
 

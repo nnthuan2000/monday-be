@@ -1,7 +1,9 @@
 import Column from '../models/column';
+import DefaultValue from '../models/defaultValue';
 import Type from '../models/type';
 import { BadRequestError } from '../root/responseHandler/error.response';
 import { performTransaction } from '../root/utils/performTransaction';
+import { ICreateColumnResult } from './interfaces/controller';
 import {
   ICreateColumnParams,
   IDeleteColumnParams,
@@ -14,20 +16,36 @@ export default class ColumnService {
     return foundAllTypes;
   }
 
-  static async createColumn({ boardId, typeId, position }: ICreateColumnParams) {
+  static async createColumn({
+    boardId,
+    typeId,
+    position,
+  }: ICreateColumnParams): Promise<ICreateColumnResult> {
     if (!typeId || !position)
       throw new BadRequestError('Missing some fields to create a new column');
-    const foundType = await Type.findById(typeId);
+    const findingTypePromise = Type.findById(typeId);
+    const findingDefaultValuePromise = DefaultValue.findOne({
+      belongType: typeId,
+    }).select('value color');
+    const [foundType, foundDefaultValue] = await Promise.all([
+      findingTypePromise,
+      findingDefaultValuePromise,
+    ]);
     if (!foundType) throw new BadRequestError('Type is not found');
+    if (!foundDefaultValue) throw new Error('Default value of this type is not found');
+    console.log(foundDefaultValue);
 
-    return await performTransaction(async (session) => {
+    return await performTransaction<ICreateColumnResult>(async (session) => {
       const [createdNewColumn] = await Column.createNewColumns({
         boardId,
         typeDoc: foundType,
         position: position,
         session,
       });
-      return createdNewColumn;
+      return {
+        createdNewColumn,
+        defaultValue: foundDefaultValue,
+      };
     });
   }
 

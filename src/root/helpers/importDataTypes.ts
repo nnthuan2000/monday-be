@@ -7,6 +7,7 @@ import Type from '../../models/type';
 
 const { password, name } = config.db;
 const uri = `mongodb+srv://monday:${password}@cluster0.a4wkrfx.mongodb.net/${name}?retryWrites=true&w=majority`;
+// const uri = `mongodb://192.168.0.106:27018/mondayDEV`;
 
 mongoose
   .connect(uri)

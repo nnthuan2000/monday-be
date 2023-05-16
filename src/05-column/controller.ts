@@ -16,7 +16,7 @@ class ColumnController<T extends IRequestWithAuth> implements IColumnController<
   });
 
   createOne: Fn<T> = catchAsync(async (req, res, next) => {
-    const createdNewColumn = await ColumnService.createColumn({
+    const { createdNewColumn, defaultValue } = await ColumnService.createColumn({
       boardId: req.params.boardId,
       ...req.body,
     });
@@ -24,6 +24,7 @@ class ColumnController<T extends IRequestWithAuth> implements IColumnController<
       message: 'Create a new column successfully',
       metadata: {
         column: createdNewColumn,
+        defaultValue,
       },
     }).send(res);
   });

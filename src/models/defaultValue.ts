@@ -1,10 +1,12 @@
-import { Schema } from 'mongoose';
+import { Schema, model } from 'mongoose';
 import db from '../root/db';
 import {
   DefaultValueModel,
   IDefaultValue,
   IDefaultValueMethods,
+  IInitDefaultValues,
 } from '../08-value/interfaces/defaultValue';
+import Type from './type';
 
 const DOCUMENT_NAME = 'DefaultValue';
 const COLLECTION_NAME = 'DefaultValues';
@@ -14,17 +16,27 @@ var defaultValueSchema = new Schema<IDefaultValue, DefaultValueModel, IDefaultVa
   {
     value: {
       type: String,
-      required: true,
+      default: null,
     },
     color: {
       type: String,
       required: true,
+      default: '#797e93',
     },
     belongType: {
       type: Schema.Types.ObjectId,
       ref: 'Type',
     },
-    belongBoard: {},
+    belongBoard: {
+      type: Schema.Types.ObjectId,
+      ref: 'Board',
+      default: null,
+    },
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
   },
   {
     collection: COLLECTION_NAME,
@@ -32,6 +44,20 @@ var defaultValueSchema = new Schema<IDefaultValue, DefaultValueModel, IDefaultVa
   }
 );
 
-//Export the model
-const DefaultValue = db.model<IDefaultValue, DefaultValueModel>(DOCUMENT_NAME, defaultValueSchema);
+defaultValueSchema.static(
+  'initDefaultValues',
+  async function initDefaultValues({ type }: IInitDefaultValues) {
+    const createdType = await Type.create({ name: type });
+    await this.create({
+      belongType: createdType._id,
+    });
+  }
+);
+
+let DefaultValue: DefaultValueModel;
+if (process.env.STATUS === 'import') {
+  DefaultValue = model<IDefaultValue, DefaultValueModel>(DOCUMENT_NAME, defaultValueSchema);
+} else {
+  DefaultValue = db.model<IDefaultValue, DefaultValueModel>(DOCUMENT_NAME, defaultValueSchema);
+}
 export default DefaultValue;

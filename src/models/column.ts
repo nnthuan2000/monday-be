@@ -61,7 +61,7 @@ columnSchema.static(
         { session }
       );
 
-      await Board.findByIdAndUpdate(
+      const updatedBoard = await Board.findByIdAndUpdate(
         boardId,
         {
           $push: {
@@ -70,6 +70,9 @@ columnSchema.static(
         },
         { session }
       );
+      if (!updatedBoard) throw new BadRequestError('Board is not found');
+
+      ////
     } else {
       const findingStatusType = Type.findOne({ name: MultipleValueTypes.STATUS }).lean();
       const findingDateType = Type.findOne({ name: SingleValueTypes.DATE }).lean();

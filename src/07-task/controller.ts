@@ -20,7 +20,8 @@ class TaskController<T extends IRequestWithAuth> implements IFullController<T> {
   });
 
   createOne: Fn<T> = catchAsync(async (req, res, next) => {
-    const createdNewTask = await TaskService.createTask({
+    const { createdNewTask, defaultValues } = await TaskService.createTask({
+      boardId: req.params.boardId,
       groupId: req.params.groupId,
       data: req.body,
     });
@@ -29,6 +30,7 @@ class TaskController<T extends IRequestWithAuth> implements IFullController<T> {
       message: 'Create a new task successfully',
       metadata: {
         task: createdNewTask,
+        defaulValues: defaultValues,
       },
     }).send(res);
   });
