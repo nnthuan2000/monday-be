@@ -85,6 +85,7 @@ columnSchema.static(
         boardDoc: updatedBoard,
         columnDoc: createdNewColumns[0],
         defaultValue: foundDefaultValue,
+        session,
       });
 
       return {
@@ -140,7 +141,23 @@ columnSchema.static(
     if (!updatedBoard) throw new BadRequestError('Board is not found');
 
     // Delete all values in this column
-    await TasksColumns.deleteMany({ belongColumn: deletedColumn._id }, { session });
+    const deleteTasksColumns = await TasksColumns.find(
+      {
+        belongColumn: { $in: deletedColumn._id },
+      },
+      {},
+      { session }
+    );
+
+    // Remove all task id
+    const deleteingTasksColumnsPromises = deleteTasksColumns.map((tasksColumns) =>
+      TasksColumns.deleteTasksColumnsByColumn({
+        tasksColumnsDoc: tasksColumns,
+        session,
+      })
+    );
+
+    await Promise.all(deleteingTasksColumnsPromises);
   }
 );
 
