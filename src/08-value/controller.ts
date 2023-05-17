@@ -9,7 +9,7 @@ class ValueController<T extends IRequestWithAuth> implements IFullController<T> 
   getAll: Fn<T> = catchAsync(async (req, res, next) => {
     const valuesByType = await ValueService.getAllValuesByType({
       boardId: req.params.boardId,
-      typeId: req.params.typeId,
+      columnId: req.params.columnId,
     });
 
     new OK({
@@ -23,7 +23,7 @@ class ValueController<T extends IRequestWithAuth> implements IFullController<T> 
   createOne: Fn<T> = catchAsync(async (req, res, next) => {
     const createdNewValue = await ValueService.createValueByType({
       boardId: req.params.boardId,
-      typeId: req.params.typeId,
+      columnId: req.params.columnId,
       data: req.body,
       userId: req.user._id,
     });
