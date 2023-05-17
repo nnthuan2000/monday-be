@@ -8,9 +8,14 @@ import columnRouter from '../05-column/route';
 import groupRouter from '../06-group/route';
 import taskRouter from '../07-task/route';
 import valueRouter from '../08-value/route';
+import imageRouter from '../09-images/route';
 
 const router = Router();
 
+//* Image
+router.use('', imageRouter);
+
+//* Authentication
 router.use('/auth', accessRouter);
 
 // router.use(authenticate as any);

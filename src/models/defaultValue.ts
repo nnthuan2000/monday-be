@@ -50,8 +50,8 @@ var defaultValueSchema = new Schema<IDefaultValue, DefaultValueModel, IDefaultVa
 
 defaultValueSchema.static(
   'initDefaultValues',
-  async function initDefaultValues({ type }: IInitDefaultValues) {
-    const createdType = await Type.create({ name: type });
+  async function initDefaultValues({ type, icon }: IInitDefaultValues) {
+    const createdType = await Type.create({ name: type, icon });
     await this.create({
       belongType: createdType._id,
       canEditColor: false,
