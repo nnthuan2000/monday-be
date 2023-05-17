@@ -9,7 +9,7 @@ valueRouter
   .delete(valueController.deleteOne as any);
 
 valueRouter
-  .route('/board/:boardId/type/:typeId/values')
+  .route('/board/:boardId/column/:columnId/values')
   .get(valueController.getAll as any)
   .post(valueController.createOne as any);
 

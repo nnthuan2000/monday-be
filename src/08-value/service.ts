@@ -1,7 +1,6 @@
 import Board from '../models/board';
 import DefaultValue from '../models/defaultValue';
 import TasksColumns from '../models/tasksColumns';
-import Type from '../models/type';
 import { BadRequestError } from '../root/responseHandler/error.response';
 import { performTransaction } from '../root/utils/performTransaction';
 import {
@@ -12,35 +11,39 @@ import {
   IUpdateValueByTypeParams,
 } from './interfaces/services';
 import { SingleValueTypes } from '../05-column/constant';
+import Column from '../models/column';
+import { IColumnDocWithType } from '../05-column/interfaces/column';
 
 export default class ValueService {
-  static async getAllValuesByType({ boardId, typeId }: IGetAllValuesByTypeParams) {
-    const foundType = await Type.findById(typeId);
-    if (!foundType) throw new BadRequestError('Type is not found');
+  static async getAllValuesByType({ boardId, columnId }: IGetAllValuesByTypeParams) {
+    const foundColumn = await Column.findById(columnId).lean();
+    if (!foundColumn) throw new BadRequestError('Column is not found');
 
     const foundAllValues = await DefaultValue.find({
       belongBoard: { $in: [boardId, null] },
-      belongType: foundType._id,
+      belongType: foundColumn.belongType,
     })
       .select('_id value color')
       .lean();
     return foundAllValues;
   }
 
-  static async createValueByType({ boardId, typeId, userId, data }: ICreateValueByTypeParams) {
-    const findingBoardPromise = Board.findById(boardId);
-    const findingTypePromise = Type.findById(typeId);
-    const [foundBoard, foundType] = await Promise.all([findingBoardPromise, findingTypePromise]);
+  static async createValueByType({ boardId, columnId, userId, data }: ICreateValueByTypeParams) {
+    const foundBoard = await Board.findById(boardId);
+    const foundColumn = (await Column.findById(columnId).populate({
+      path: 'belongType',
+      select: '_id name',
+    })) as IColumnDocWithType;
     if (!foundBoard) throw new BadRequestError('Board is not found');
-    if (!foundType) throw new BadRequestError('Type is not found');
-    if (Object.values(SingleValueTypes).includes(foundType.name as SingleValueTypes)) {
+    if (!foundColumn) throw new BadRequestError('Column is not found');
+    if (Object.values(SingleValueTypes).includes(foundColumn.belongType.name as SingleValueTypes)) {
       throw new BadRequestError(`This type can not create more value`);
     }
 
     const createdNewValue = await DefaultValue.create({
       ...data,
       belongBoard: boardId,
-      belongType: typeId,
+      belongType: foundColumn.belongType,
       createdBy: userId,
     });
     return createdNewValue;

@@ -3,12 +3,12 @@ import { IDefaultValue } from './defaultValue';
 
 export interface IGetAllValuesByTypeParams {
   boardId: string;
-  typeId: string;
+  columnId: string;
 }
 
 export interface ICreateValueByTypeParams {
   boardId: string;
-  typeId: string;
+  columnId: string;
   userId: Types.ObjectId;
   data: IDefaultValue;
 }

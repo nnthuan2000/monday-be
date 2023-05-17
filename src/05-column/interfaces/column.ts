@@ -37,6 +37,10 @@ export interface IDeleteColumn {
 export type IColumnDoc = Doc<IColumn, IColumnMethods>;
 export type IColumnDocObj = DocObj<IColumn>;
 
+export type IColumnDocWithType = NonNullable<IColumnDoc> & {
+  belongType: ITypeDoc;
+};
+
 export interface IColumnMethods {}
 
 // For statics
