@@ -1,6 +1,7 @@
 import { ClientSession, Model, Types } from 'mongoose';
 import { Doc, DocObj } from '../../root/app.interfaces';
 import { ITypeDoc } from './type';
+import { IDefaultValueDoc } from '../../08-value/interfaces/defaultValue';
 
 export interface IColumn {
   name: string;
@@ -17,6 +18,12 @@ export interface ICreateNewColumns {
   typeDoc?: ITypeDoc;
   position?: number;
   session: ClientSession;
+}
+
+export interface ICreateNewColumnsResult {
+  createdNewColumns: NonNullable<IColumnDoc>[];
+  defaultValue?: IDefaultValueDoc;
+  tasksColumnsIds?: Types.ObjectId[];
 }
 
 export interface IDeleteColumn {
@@ -39,6 +46,6 @@ export interface ColumnModel extends Model<IColumn, {}, IColumnMethods> {
     typeDoc,
     position,
     session,
-  }: ICreateNewColumns): Promise<NonNullable<IColumnDoc>[]>;
+  }: ICreateNewColumns): Promise<ICreateNewColumnsResult>;
   deleteColumn({ boardId, columnId, session }: IDeleteColumn): Promise<null>;
 }

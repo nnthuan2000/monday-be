@@ -5,6 +5,7 @@ export interface IGetTaskParams {
 }
 
 export interface ICreateTaskParams {
+  boardId: string;
   groupId: string;
   data: ITask;
 }

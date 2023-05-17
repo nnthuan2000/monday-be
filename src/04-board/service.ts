@@ -33,7 +33,7 @@ export default class BoardService {
     const foundWorkspace = await Workspace.findById(workspaceId);
     if (!foundWorkspace) throw new BadRequestError('Workspace is not found');
     const boardQuery = new QueryTransform<IBoard>(
-      Board.find({ _id: { $in: foundWorkspace._id } }),
+      Board.find({ _id: { $in: foundWorkspace.boards } }),
       requestQuery
     )
       .filter()
@@ -48,7 +48,7 @@ export default class BoardService {
     const foundBoard = await Board.findById(boardId)
       .populate({
         path: 'columns',
-        select: '_id name position',
+        select: '_id name position belongType',
         options: {
           sort: { position: 1 },
         },
@@ -62,6 +62,17 @@ export default class BoardService {
         populate: {
           path: 'tasks',
           select: '_id name description position values',
+          options: {
+            sort: { position: 1 },
+          },
+          populate: {
+            path: 'values',
+            select: '_id value valueId typeOfValue belongColumn',
+            populate: {
+              path: 'valueId',
+              select: '_id value color',
+            },
+          },
         },
       })
       .lean();

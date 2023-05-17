@@ -9,7 +9,7 @@ export interface IBoard {
   description: string;
   isCreatedView: boolean;
   belongWorkspace: Types.ObjectId;
-  columns: Types.ObjectId[];
+  columns: Types.ObjectId[] | IColumnDoc[];
   groups: Types.ObjectId[];
 }
 

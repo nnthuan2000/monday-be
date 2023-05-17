@@ -7,18 +7,6 @@ import ColumnService from './service';
 class ColumnController<T extends IRequestWithAuth> implements IColumnController<T> {
   getOne: Fn<T> = catchAsync(async (req, res, next) => {});
 
-  getAll: Fn<T> = catchAsync(async (req, res, next) => {
-    const foundAllColumns = await ColumnService.getAllColumnsByBoard({
-      boardId: req.params.boardId,
-    });
-    new OK({
-      message: 'Get all columns successfully',
-      metadata: {
-        columns: foundAllColumns,
-      },
-    }).send(res);
-  });
-
   getAllTypes: Fn<T> = catchAsync(async (req, res, next) => {
     const foundAllTypes = await ColumnService.getAllTypes();
     new OK({
@@ -30,7 +18,7 @@ class ColumnController<T extends IRequestWithAuth> implements IColumnController<
   });
 
   createOne: Fn<T> = catchAsync(async (req, res, next) => {
-    const createdNewColumn = await ColumnService.createColumn({
+    const { createdNewColumn, defaultValue, tasksColumnsIds } = await ColumnService.createColumn({
       boardId: req.params.boardId,
       ...req.body,
     });
@@ -38,6 +26,8 @@ class ColumnController<T extends IRequestWithAuth> implements IColumnController<
       message: 'Create a new column successfully',
       metadata: {
         column: createdNewColumn,
+        defaultValue,
+        tasksColumnsIds,
       },
     }).send(res);
   });

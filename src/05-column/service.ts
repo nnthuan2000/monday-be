@@ -1,12 +1,11 @@
-import Board from '../models/board';
 import Column from '../models/column';
 import Type from '../models/type';
 import { BadRequestError } from '../root/responseHandler/error.response';
 import { performTransaction } from '../root/utils/performTransaction';
+import { ICreateColumnResult } from './interfaces/controller';
 import {
   ICreateColumnParams,
   IDeleteColumnParams,
-  IGetAllColumnsByBoard,
   IUpdateColumnParams,
 } from './interfaces/services';
 
@@ -16,32 +15,29 @@ export default class ColumnService {
     return foundAllTypes;
   }
 
-  static async getAllColumnsByBoard({ boardId }: IGetAllColumnsByBoard) {
-    const foundBoard = await Board.findById(boardId).populate({
-      path: 'columns',
-      select: '_id name position',
-      options: {
-        sort: { position: 1 },
-      },
-    });
-    if (!foundBoard) throw new BadRequestError('Board is not found');
-    return foundBoard.columns;
-  }
-
-  static async createColumn({ boardId, typeId, position }: ICreateColumnParams) {
+  static async createColumn({
+    boardId,
+    typeId,
+    position,
+  }: ICreateColumnParams): Promise<ICreateColumnResult> {
     if (!typeId || !position)
       throw new BadRequestError('Missing some fields to create a new column');
     const foundType = await Type.findById(typeId);
+
     if (!foundType) throw new BadRequestError('Type is not found');
 
-    return await performTransaction(async (session) => {
-      const [createdNewColumn] = await Column.createNewColumns({
+    return await performTransaction<ICreateColumnResult>(async (session) => {
+      const { createdNewColumns, defaultValue, tasksColumnsIds } = await Column.createNewColumns({
         boardId,
         typeDoc: foundType,
         position: position,
         session,
       });
-      return createdNewColumn;
+      return {
+        createdNewColumn: createdNewColumns[0],
+        defaultValue,
+        tasksColumnsIds,
+      };
     });
   }
 

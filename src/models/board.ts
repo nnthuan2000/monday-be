@@ -13,6 +13,7 @@ import { BadRequestError } from '../root/responseHandler/error.response';
 import Group from './group';
 import { convertToArrObj } from '../root/utils';
 import Workspace from './workspace';
+import DefaultValue from './defaultValue';
 
 const DOCUMENT_NAME = 'Board';
 const COLLECTION_NAME = 'Boards';
@@ -79,27 +80,26 @@ boardSchema.static(
       { session }
     );
 
-    await workspaceDoc.updateOne({
-      $push: {
-        boards: createdNewBoard._id,
+    await workspaceDoc.updateOne(
+      {
+        $push: {
+          boards: createdNewBoard._id,
+        },
       },
-    });
+      { session }
+    );
 
     // Create new 2 columns, 2 groups and each group will create 2 new task with default values of 2 created columns
-    const creatingNewColumnPromises = Column.createNewColumns({
+    const { createdNewColumns } = await Column.createNewColumns({
       boardId: createdNewBoard._id,
       session,
     });
 
-    const creatingNewGroupPromises = Group.createNewGroups({
+    const createdNewGroups = await Group.createNewGroups({
       boardId: createdNewBoard._id,
+      columns: createdNewColumns,
       session,
     });
-
-    const [createdNewColumns, createdNewGroups] = await Promise.all([
-      creatingNewColumnPromises,
-      creatingNewGroupPromises,
-    ]);
 
     await createdNewBoard.updateOne({
       $push: {
@@ -110,7 +110,10 @@ boardSchema.static(
 
     return {
       ...createdNewBoard.toObject(),
-      columns: convertToArrObj({ fields: ['_id', 'name', 'position'], objects: createdNewColumns }),
+      columns: convertToArrObj({
+        fields: ['_id', 'name', 'position', 'belongType'],
+        objects: createdNewColumns,
+      }),
       groups: convertToArrObj({
         fields: ['_id', 'name', 'position', 'tasks'],
         objects: createdNewGroups,
@@ -126,11 +129,15 @@ boardSchema.static(
     if (!deletedBoard) throw new BadRequestError('Board is not found');
 
     if (workspaceId) {
-      const updatedWorkspace = await Workspace.findByIdAndUpdate(workspaceId, {
-        $pull: {
-          boards: deletedBoard._id,
+      const updatedWorkspace = await Workspace.findByIdAndUpdate(
+        workspaceId,
+        {
+          $pull: {
+            boards: deletedBoard._id,
+          },
         },
-      });
+        { session }
+      );
       if (!updatedWorkspace) throw new BadRequestError('Workspace is not found');
     }
 
@@ -145,7 +152,12 @@ boardSchema.static(
       Group.deleteGroup({ groupId, session })
     );
 
-    await Promise.all([...deleteGroupPromises, deleteColumnsPromise]);
+    const deleteAllDefaultValue = DefaultValue.deleteMany(
+      { belongBoard: deletedBoard._id },
+      { session }
+    );
+
+    await Promise.all([...deleteGroupPromises, deleteColumnsPromise, deleteAllDefaultValue]);
   }
 );
 

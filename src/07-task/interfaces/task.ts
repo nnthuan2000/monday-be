@@ -16,7 +16,7 @@ export interface ITask {
 export interface ICreateNewTasks {
   groupId?: string;
   data?: ITask;
-  columns?: IColumnDoc[];
+  columns: NonNullable<IColumnDoc>[];
   session: ClientSession;
 }
 
@@ -34,11 +34,12 @@ export type ITaskDocObj = DocObj<ITask>;
 export interface ITaskMethods {}
 
 // For statics
+
 export interface TaskModel extends Model<ITask, {}, ITaskMethods> {
   createNewTasks({
     groupId,
-    columns,
     data,
+    columns,
     session,
   }: ICreateNewTasks): Promise<NonNullable<ITaskDoc>[]>;
   deleteTask({ groupId, taskId, session }: IDeleteTask): Promise<null>;

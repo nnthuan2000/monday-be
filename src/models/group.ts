@@ -46,7 +46,7 @@ groupSchema.static(
   'createNewGroups',
   async function createNewGroups({ boardId, data, columns, session }: ICreateNewGroups) {
     let createdNewGroups: NonNullable<IGroupDoc>[];
-    if (data) {
+    if (!columns) {
       createdNewGroups = await this.create([{ ...data }], { session });
       await Board.findByIdAndUpdate(
         boardId,
@@ -57,31 +57,40 @@ groupSchema.static(
         },
         { session }
       );
-    } else {
-      //Create two new tasks and new values of these task with columns
-      let groupObjs: IGroup[] = [];
-      const tasksPerGroup = 2;
-      const createdNewTasks = await Task.createNewTasks({ columns, session });
-
-      for (let i = 0; i < createdNewTasks.length; i += tasksPerGroup) {
-        const tasksSlice = createdNewTasks.slice(i, i + tasksPerGroup);
-
-        const group: IGroup = {
-          name: `New Group`,
-          position: i / tasksPerGroup + 1,
-          tasks: tasksSlice.map((task) => task._id),
-        };
-
-        groupObjs.push(group);
-      }
-
-      createdNewGroups = await this.insertMany(groupObjs, { session });
+      return createdNewGroups;
     }
+
+    //Create two new tasks and new values of these task with columns
+    let groupObjs: IGroup[] = [];
+    const tasksPerGroup = 2;
+    const createdNewTasks = await Task.createNewTasks({ columns, session });
+
+    for (let i = 0; i < createdNewTasks.length; i += tasksPerGroup) {
+      const tasksSlice = createdNewTasks.slice(i, i + tasksPerGroup);
+
+      const group: IGroup = {
+        name: `New Group`,
+        position: i / tasksPerGroup + 1,
+        tasks: tasksSlice.map((task) => task._id),
+      };
+
+      groupObjs.push(group);
+    }
+
+    createdNewGroups = await this.insertMany(groupObjs, { session });
 
     const groupPromises = createdNewGroups.map((group) =>
       group.populate({
         path: 'tasks',
-        select: '_id name position values',
+        select: '_id name description position values',
+        populate: {
+          path: 'values',
+          select: '_id value valueId typeOfValue belongColumn',
+          populate: {
+            path: 'valueId',
+            select: '_id value color',
+          },
+        },
       })
     );
 
@@ -97,12 +106,6 @@ groupSchema.static(
 
     // Delete all tasks and values of each task in this group
 
-    const deleteTaskPromises = deletedGroup.tasks.map((task) =>
-      Task.deleteTask({ taskId: task._id, session })
-    );
-
-    await Promise.all(deleteTaskPromises);
-
     if (boardId) {
       const updatedBoard = await Board.findByIdAndUpdate(
         boardId,
@@ -114,7 +117,15 @@ groupSchema.static(
         { session }
       );
       if (!updatedBoard) throw new BadRequestError('Board is not found');
+      if (updatedBoard.groups.length === 0)
+        throw new BadRequestError('Board has to have at least one group');
     }
+
+    const deleteTaskPromises = deletedGroup.tasks.map((task) =>
+      Task.deleteTask({ taskId: task._id, session })
+    );
+
+    await Promise.all(deleteTaskPromises);
   }
 );
 

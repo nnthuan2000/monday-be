@@ -14,8 +14,8 @@ export interface IGroup {
 
 export interface ICreateNewGroups {
   boardId: Types.ObjectId | string;
-  data?: IGroup;
   columns?: NonNullable<IColumnDoc>[];
+  data?: IGroup;
   session: ClientSession;
 }
 
@@ -36,8 +36,8 @@ export interface IGroupMethods {}
 export interface GroupModel extends Model<IGroup, {}, IGroupMethods> {
   createNewGroups({
     boardId,
-    data,
     columns,
+    data,
     session,
   }: ICreateNewGroups): Promise<NonNullable<IGroupDoc>[]>;
   deleteGroup({ boardId, session }: IDeleteGroup): Promise<null>;
