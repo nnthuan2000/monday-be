@@ -11,7 +11,7 @@ import db from '../root/db';
 import Group from './group';
 import { BadRequestError } from '../root/responseHandler/error.response';
 import DefaultValue from './defaultValue';
-import { createSetOfTasksColumns } from '../root/utils';
+import { createSetOfTasksColumnsByTask } from '../root/utils';
 import TasksColumns from './tasksColumns';
 
 const DOCUMENT_NAME = 'Task';
@@ -59,25 +59,27 @@ taskSchema.static(
 
     const foundDefaultValues = await Promise.all(findingDefaulValuePromises);
 
-    let createdNewTasks: NonNullable<ITaskDoc>[];
+    let createdNewTasks: ITaskDoc[];
     if (groupId && data) {
-      const task: ITask = {
-        name: data.name,
-        position: data.position,
-        values: await createSetOfTasksColumns(foundDefaultValues, columns, session),
-      };
+      const createdNewTask = await this.create([{ ...data }], { session });
 
-      createdNewTasks = await this.create([{ ...task }], { session });
+      const updatedTask = await createSetOfTasksColumnsByTask({
+        defaultValues: foundDefaultValues,
+        columns,
+        taskDoc: createdNewTask[0],
+        session,
+      });
+
       await Group.findByIdAndUpdate(
         groupId,
         {
           $push: {
-            tasks: createdNewTasks[0]._id,
+            tasks: updatedTask!._id,
           },
         },
         { session }
       );
-      return await createdNewTasks[0].populate({
+      return await updatedTask!.populate({
         path: 'values',
         select: '_id value valueId belongColumn typeOfValue',
         populate: {
@@ -93,11 +95,17 @@ taskSchema.static(
         { name: 'Task 2', position: 2, values: [] },
       ];
 
-      for (const task of taskObjs) {
-        task.values = await createSetOfTasksColumns(foundDefaultValues, columns, session);
-      }
+      const createdInsertTasks = await this.insertMany(taskObjs, { session });
+      const updatingCreatedTasks = createdInsertTasks.map((task) =>
+        createSetOfTasksColumnsByTask({
+          defaultValues: foundDefaultValues,
+          columns,
+          taskDoc: task,
+          session,
+        })
+      );
 
-      createdNewTasks = await this.insertMany(taskObjs, { session });
+      createdNewTasks = await Promise.all(updatingCreatedTasks);
     }
     return createdNewTasks;
   }

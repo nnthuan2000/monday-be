@@ -3,6 +3,7 @@ import { IDefaultValueDoc } from '../../08-value/interfaces/defaultValue';
 import { IColumnDoc } from '../../05-column/interfaces/column';
 import { ClientSession, Types } from 'mongoose';
 import { ITaskDoc } from '../../07-task/interfaces/task';
+import Task from '../../models/task';
 import TasksColumns from '../../models/tasksColumns';
 
 interface IGetInfoParams<T> {
@@ -26,12 +27,20 @@ export const getSelectData = (select: string[]) => {
   return Object.fromEntries(select.map((el) => [el, 1]));
 };
 
-export const createSetOfTasksColumns = async (
-  defaultValues: IDefaultValueDoc[],
-  columns: NonNullable<IColumnDoc>[],
-  session: ClientSession
-) => {
-  const result: Types.ObjectId[] = [];
+interface ICreateSetOfTasksColumnsByTask {
+  defaultValues: IDefaultValueDoc[];
+  columns: NonNullable<IColumnDoc>[];
+  taskDoc: NonNullable<ITaskDoc>;
+  session: ClientSession;
+}
+
+export const createSetOfTasksColumnsByTask = async ({
+  columns,
+  defaultValues,
+  session,
+  taskDoc,
+}: ICreateSetOfTasksColumnsByTask) => {
+  let result: ITaskDoc = null;
   for (const [i, value] of defaultValues.entries()) {
     const createdNewTasksColumns = await TasksColumns.create(
       [
@@ -39,12 +48,22 @@ export const createSetOfTasksColumns = async (
           value: value ? null : value,
           valueId: value ? value._id : null,
           belongColumn: columns[i],
+          belongTask: taskDoc._id,
           typeOfValue: value ? 'multiple' : 'single',
         },
       ],
       { session }
     );
-    result.push(createdNewTasksColumns[0]._id);
+    result = await Task.findByIdAndUpdate(
+      taskDoc._id,
+      {
+        $push: {
+          values: createdNewTasksColumns[0]._id,
+        },
+        new: true,
+      },
+      { session }
+    );
   }
   return result;
 };
@@ -70,6 +89,7 @@ export const createSetOfTasksColumnsByColumn = async ({
         value: null,
         valueId: defaultValue ? defaultValue._id : null,
         belongColumn: columnId,
+        belongTask: taskDoc._id,
         typeOfValue,
       },
     ],

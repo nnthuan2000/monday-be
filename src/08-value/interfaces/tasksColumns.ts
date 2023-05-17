@@ -1,4 +1,4 @@
-import { Model, Types } from 'mongoose';
+import { ClientSession, Model, Types } from 'mongoose';
 import { Doc, DocObj } from '../../root/app.interfaces';
 import { IBoardDoc } from '../../04-board/interfaces/board';
 import { IColumnDoc } from '../../05-column/interfaces/column';
@@ -9,6 +9,7 @@ export interface ITasksColumns {
   valueId: Types.ObjectId;
   typeOfValue: string;
   belongColumn: Types.ObjectId;
+  belongTask: Types.ObjectId;
 }
 
 /////////////////////////////////////
@@ -19,6 +20,12 @@ export interface ICreateTasksColumnsByColumn {
   boardDoc: NonNullable<IBoardDoc>;
   columnDoc: NonNullable<IColumnDoc>;
   defaultValue: IDefaultValueDoc;
+  session: ClientSession;
+}
+
+export interface IDeleteTasksColumnsByColumn {
+  tasksColumnsDoc: NonNullable<ITasksColumnsDoc>;
+  session: ClientSession;
 }
 
 // For instance methods
@@ -34,5 +41,10 @@ export interface TasksColumnsModel extends Model<ITasksColumns, {}, ITasksColumn
     boardDoc,
     columnDoc,
     defaultValue,
+    session,
   }: ICreateTasksColumnsByColumn): Promise<Types.ObjectId[]>;
+  deleteTasksColumnsByColumn({
+    tasksColumnsDoc,
+    session,
+  }: IDeleteTasksColumnsByColumn): Promise<null>;
 }

@@ -2,6 +2,7 @@ import { Schema } from 'mongoose';
 import db from '../root/db';
 import {
   ICreateTasksColumnsByColumn,
+  IDeleteTasksColumnsByColumn,
   ITasksColumns,
   ITasksColumnsMethods,
   TasksColumnsModel,
@@ -9,6 +10,7 @@ import {
 import { ITaskDoc } from '../07-task/interfaces/task';
 import { createSetOfTasksColumnsByColumn } from '../root/utils';
 import { performTransaction } from '../root/utils/performTransaction';
+import Task from './task';
 
 const DOCUMENT_NAME = 'TasksColumns';
 const COLLECTION_NAME = 'TasksColumnss';
@@ -33,10 +35,16 @@ var tasksColumnsSchema = new Schema<ITasksColumns, TasksColumnsModel, ITasksColu
       type: Schema.Types.ObjectId,
       ref: 'Column',
     },
+    belongTask: {
+      type: Schema.Types.ObjectId,
+      ref: 'Task',
+    },
   },
   {
     collection: COLLECTION_NAME,
     timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   }
 );
 
@@ -76,6 +84,19 @@ tasksColumnsSchema.static(
       const tasksColumns = await Promise.all(updatingTaskPromises);
       return tasksColumns;
     });
+  }
+);
+
+tasksColumnsSchema.static(
+  'deleteTasksColumnsByColumn',
+  async function deleteTasksColumnsByColumn({ tasksColumnsDoc }: IDeleteTasksColumnsByColumn) {
+    await Task.findByIdAndUpdate(tasksColumnsDoc.belongTask, {
+      $pull: {
+        values: tasksColumnsDoc._id,
+      },
+    });
+
+    await tasksColumnsDoc.deleteOne();
   }
 );
 
