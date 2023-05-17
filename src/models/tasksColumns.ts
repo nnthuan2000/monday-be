@@ -73,8 +73,8 @@ tasksColumnsSchema.static(
         })
       );
 
-      const tasksColumnsIds = await Promise.all(updatingTaskPromises);
-      return tasksColumnsIds;
+      const tasksColumns = await Promise.all(updatingTaskPromises);
+      return tasksColumns;
     });
   }
 );

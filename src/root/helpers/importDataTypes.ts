@@ -6,7 +6,7 @@ import config from '../../root/configs';
 import Type from '../../models/type';
 
 const { password, name } = config.db;
-const uri = `mongodb+srv://monday:${password}@cluster0.a4wkrfx.mongodb.net/${name}?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://monday:${password}@cluster0.gzcsvxt.mongodb.net/${name}?retryWrites=true&w=majority`;
 // const uri = `mongodb://192.168.1.15:27018/mondayDEV`;
 // const uri = `mongodb://192.168.0.106:27018/mondayDEV`;
 
