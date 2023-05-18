@@ -18,6 +18,9 @@ var typeSchema = new Schema<IType, TypeModel, ITypeMethods>(
     icon: {
       type: String,
     },
+    color: {
+      type: String,
+    },
   },
   {
     collection: COLLECTION_NAME,
@@ -27,7 +30,7 @@ var typeSchema = new Schema<IType, TypeModel, ITypeMethods>(
 
 typeSchema.static('createTypes', async function createTypes() {
   const creatingMultipleValueTypes = Object.values(multipleValueTypes).map((type) =>
-    DefaultValue.initDefaultValues({ type: type.name, icon: type.icon })
+    DefaultValue.initDefaultValues({ type: type.name, icon: type.icon, color: type.color })
   );
   const creatingSingleValueTypes = Object.values(singleValueTypes).map((type) =>
     this.create({ name: type.name, icon: type.icon })
