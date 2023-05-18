@@ -12,7 +12,7 @@ export const multipleValueTypes = {
   },
   priority: {
     name: MultipleValueTypes.PRIORITY,
-    icon: 'http://localhost:3001/v1/api/images/priority-column-icon.svg',
+    icon: 'http://localhost:3001/v1/api/images/priority-column-icon.png',
     color: '#feca00',
   },
   label: {

@@ -33,7 +33,7 @@ typeSchema.static('createTypes', async function createTypes() {
     DefaultValue.initDefaultValues({ type: type.name, icon: type.icon, color: type.color })
   );
   const creatingSingleValueTypes = Object.values(singleValueTypes).map((type) =>
-    this.create({ name: type.name, icon: type.icon })
+    this.create({ name: type.name, icon: type.icon, color: type.color })
   );
 
   await Promise.all([...creatingMultipleValueTypes, ...creatingSingleValueTypes]);
