@@ -14,6 +14,8 @@ export interface ISignUpParams extends ISignInParams {
   name: string;
 }
 
+export interface ISendCodeAgain extends ISignInParams {}
+
 export interface IGetMeParams {
   id: Types.ObjectId;
 }
@@ -22,3 +24,11 @@ export interface ISendResToClient<T extends IUserDoc> {
   Doc: NonNullable<T>;
   fields: string[];
 }
+
+export interface ISendGmail {
+  email: string;
+  code: string;
+  codeLifeTimeMinutes: number;
+}
+
+export interface IGetAndValidateUser extends ISignInParams {}

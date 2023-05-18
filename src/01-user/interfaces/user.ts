@@ -31,11 +31,17 @@ interface IGenerateTokensResult {
   refreshTokenLifeTime: number;
 }
 
+interface IGenerateCode {
+  code: string;
+  codeLifeTimeMinutes: number;
+  expiresIn: Date;
+}
+
 // For instance methods
 export interface IUserMethods {
   isMatchPassword(passwordInputed: string): Promise<boolean>;
   generateTokens(): IGenerateTokensResult;
-  generateCode(): string;
+  generateCode(): IGenerateCode;
 }
 
 export type IUserDoc = Doc<IUser, IUserMethods>;

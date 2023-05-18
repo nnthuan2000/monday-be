@@ -32,7 +32,7 @@ var userSchema = new Schema<IUser, UserModel, IUserMethods>(
     },
     code: {
       type: String,
-      minlength: 8,
+      default: null,
     },
     isVerified: {
       type: Boolean,
@@ -40,6 +40,7 @@ var userSchema = new Schema<IUser, UserModel, IUserMethods>(
     },
     expiresIn: {
       type: Date,
+      default: null,
     },
     userProfile: {
       type: Schema.Types.Mixed,
@@ -62,8 +63,11 @@ userSchema.method('isMatchPassword', async function isMatchPassword(passwordInpu
   return await bcrypt.compare(passwordInputed, this.password);
 });
 
-userSchema.method('generateCode', async function generateCode() {
-  return Math.floor(Math.random() * (999999 - 1000000) * 1000000);
+userSchema.method('generateCode', function generateCode() {
+  const code = Math.floor(Math.random() * (999999 - 100000 + 1) + 100000).toString();
+  const codeLifeTimeMinutes = 5;
+  const expiresIn = new Date(Date.now() + codeLifeTimeMinutes * 60 * 1000);
+  return { code, codeLifeTimeMinutes, expiresIn };
 });
 
 userSchema.method('generateTokens', function generateTokens() {
