@@ -52,6 +52,10 @@ export default class BoardService {
         options: {
           sort: { position: 1 },
         },
+        populate: {
+          path: 'belongType',
+          select: '_id name',
+        },
       })
       .populate({
         path: 'groups',
