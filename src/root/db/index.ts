@@ -7,9 +7,9 @@ class Database {
   public db: mongoose.Connection;
 
   private constructor() {
-    // const { password, name } = config.db;
-    // this.uri = `mongodb+srv://monday:${password}@cluster0.gzcsvxt.mongodb.net/${name}?retryWrites=true&w=majority`;
-    this.uri = `mongodb://192.168.1.15:27018/mondayDEV`;
+    const { password, name } = config.db;
+    this.uri = `mongodb+srv://monday:${password}@cluster0.gzcsvxt.mongodb.net/${name}?retryWrites=true&w=majority`;
+    // this.uri = `mongodb://192.168.1.15:27018/mondayDEV`;
     // this.uri = `mongodb://192.168.0.106:27018/mondayDEV`;
 
     if (config.env === 'dev') {
