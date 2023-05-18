@@ -6,7 +6,7 @@ export interface IUser {
   password: string;
   code: string;
   isVerified: boolean;
-  expiresIn: Date,
+  expiresIn: Date;
   userProfile: Schema.Types.Mixed;
 }
 
@@ -35,6 +35,7 @@ interface IGenerateTokensResult {
 export interface IUserMethods {
   isMatchPassword(passwordInputed: string): Promise<boolean>;
   generateTokens(): IGenerateTokensResult;
+  generateCode(): string;
 }
 
 export type IUserDoc = Doc<IUser, IUserMethods>;

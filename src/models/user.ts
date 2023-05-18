@@ -62,6 +62,10 @@ userSchema.method('isMatchPassword', async function isMatchPassword(passwordInpu
   return await bcrypt.compare(passwordInputed, this.password);
 });
 
+userSchema.method('generateCode', async function generateCode() {
+  return Math.floor(Math.random() * (999999 - 1000000) * 1000000);
+});
+
 userSchema.method('generateTokens', function generateTokens() {
   const payload: Payload = {
     userId: this._id.toString(),
