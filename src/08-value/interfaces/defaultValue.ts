@@ -18,6 +18,7 @@ export interface IDefaultValue {
 export interface IInitDefaultValues {
   type: MultipleValueTypes;
   icon: string;
+  color: string;
 }
 
 // For instance methods
@@ -29,5 +30,5 @@ export interface IDefaultValueMethods {}
 
 // For statics
 export interface DefaultValueModel extends Model<IDefaultValue, {}, IDefaultValueMethods> {
-  initDefaultValues({ type, icon }: IInitDefaultValues): Promise<null>;
+  initDefaultValues({ type, icon, color }: IInitDefaultValues): Promise<null>;
 }

@@ -4,6 +4,7 @@ import { Doc, DocObj } from '../../root/app.interfaces';
 export interface IType {
   name: string;
   icon: string;
+  color: string;
 }
 
 /////////////////////////////////////
