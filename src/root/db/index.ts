@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import config from '../configs';
+import { config } from '../configs';
 
 class Database {
   private static instance: Database;
@@ -7,8 +7,10 @@ class Database {
   public db: mongoose.Connection;
 
   private constructor() {
-    const { password, name } = config.db;
-    this.uri = `mongodb+srv://monday:${password}@cluster0.a4wkrfx.mongodb.net/${name}?retryWrites=true&w=majority`;
+    // const { password, name } = config.db;
+    // this.uri = `mongodb+srv://monday:${password}@cluster0.a4wkrfx.mongodb.net/${name}?retryWrites=true&w=majority`;
+    this.uri = 'mongodb://192.168.1.15:27018';
+    // this.uri = 'mongodb://192.168.0.106:27018';
 
     if (config.env === 'dev') {
       mongoose.set('debug', true);

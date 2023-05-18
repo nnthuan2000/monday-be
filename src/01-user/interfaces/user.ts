@@ -4,6 +4,9 @@ import { Doc, DocObj, SelectOptions } from '../../root/app.interfaces';
 export interface IUser {
   email: string;
   password: string;
+  code: string;
+  isVerified: boolean;
+  expiresIn: Date,
   userProfile: Schema.Types.Mixed;
 }
 

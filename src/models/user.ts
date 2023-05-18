@@ -30,6 +30,17 @@ var userSchema = new Schema<IUser, UserModel, IUserMethods>(
       minlength: 8,
       select: false,
     },
+    code: {
+      type: String,
+      minlength: 8,
+    },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    expiresIn: {
+      type: Date,
+    },
     userProfile: {
       type: Schema.Types.Mixed,
       required: true,
@@ -84,6 +95,9 @@ userSchema.static(
     selectOptions = {
       email: 1,
       password: 1,
+      code: 1,
+      isVerified: 1,
+      expiresIn: 1,
       userProfile: 1,
     },
   }: IFindByEmailParams) {

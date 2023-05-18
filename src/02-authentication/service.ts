@@ -1,4 +1,6 @@
 import { Response } from 'express';
+import nodemailer from 'nodemailer';
+import { config } from '../root/configs';
 import { BadRequestError } from '../root/responseHandler/error.response';
 import { getInfodata } from '../root/utils';
 import {
@@ -44,7 +46,7 @@ export default class AccessService {
       //TODO 3: Create new User
       const [newUserProfile] = await UserProfile.create([{ name }], { session });
 
-      const [newUser] = await User.create(
+      await User.create(
         [
           {
             email,
@@ -57,8 +59,28 @@ export default class AccessService {
         { session }
       );
 
-      //TODO 4: Create token -> send it to client
-      return this.sendResToClient({ Doc: newUser, fields: ['_id', 'email', 'userProfile'] }, res);
+      // const accessToken = await oAuth2Client.getAccessToken();
+      const transporter = nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        service: 'gmail',
+        port: 465,
+        secure: true,
+        auth: {
+          type: 'OAUTH2',
+          user: 'nnthuan2000@gmail.com',
+          clientId: config.email.clientId,
+          clientSecret: config.email.clientSecret,
+          refreshToken: config.email.refreshToken,
+        },
+      });
+
+      await transporter.sendMail({
+        from: '"Monday" <nnthuan2000@gmail.com', // sender address
+        to: 'ngocthuandn2k@gmail.com', // list of receivers
+        subject: 'Verify your email ✔', // Subject line
+        text: 'Hello world?', // plain text body
+        html: `<p>Your code: <b>${'000000'}</b></p>`, // html body
+      });
     });
   }
 

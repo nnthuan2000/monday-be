@@ -2,10 +2,12 @@ import path from 'path';
 import dotenv from 'dotenv';
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 import mongoose from 'mongoose';
-import config from '../configs';
+// import { config } from '../configs';
 
-const { password, name } = config.db;
-const uri = `mongodb+srv://monday:${password}@cluster0.a4wkrfx.mongodb.net/${name}?retryWrites=true&w=majority`;
+// const { password, name } = config.db;
+// const uri = `mongodb+srv://monday:${password}@cluster0.a4wkrfx.mongodb.net/${name}?retryWrites=true&w=majority`;
+const uri = `mongodb://192.168.1.15:27018`;
+// const uri = `mongodb://192.168.0.106:27018`;
 
 mongoose
   .connect(uri)

@@ -6,6 +6,10 @@ export interface ISignInParams {
   password: string;
 }
 
+export interface IVerfiyCode extends ISignInParams {
+  code: string;
+}
+
 export interface ISignUpParams extends ISignInParams {
   name: string;
 }
