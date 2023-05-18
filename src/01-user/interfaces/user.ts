@@ -4,6 +4,9 @@ import { Doc, DocObj, SelectOptions } from '../../root/app.interfaces';
 export interface IUser {
   email: string;
   password: string;
+  code: string;
+  isVerified: boolean;
+  expiresIn: Date;
   userProfile: Schema.Types.Mixed;
 }
 
@@ -28,10 +31,17 @@ interface IGenerateTokensResult {
   refreshTokenLifeTime: number;
 }
 
+interface IGenerateCode {
+  code: string;
+  codeLifeTimeMinutes: number;
+  expiresIn: Date;
+}
+
 // For instance methods
 export interface IUserMethods {
   isMatchPassword(passwordInputed: string): Promise<boolean>;
   generateTokens(): IGenerateTokensResult;
+  generateCode(): IGenerateCode;
 }
 
 export type IUserDoc = Doc<IUser, IUserMethods>;

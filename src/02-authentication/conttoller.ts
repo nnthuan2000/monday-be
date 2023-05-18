@@ -22,12 +22,31 @@ class AcessController<T extends IRequestWithAuth> implements IAccessController<T
     }).send(res);
   });
 
+  verifyCode: Fn<T> = catchAsync(async (req, res, next) => {
+    const { email, password, code } = req.body;
+    if (!email || !password || !code) throw new BadRequestError('Missing some fields');
+
+    new CREATED({
+      message: 'Verify account successfully',
+      metadata: await AccessService.verifyCode({ email, password, code }, res),
+    }).send(res);
+  });
+
+  sendCode: Fn<T> = catchAsync(async (req, res, next) => {
+    const { email, password } = req.body;
+    if (!email || !password) throw new BadRequestError('Missing some fields');
+    new OK({
+      message: 'Send code again successfully',
+      metadata: await AccessService.sendCodeAgain({ email, password }),
+    }).send(res);
+  });
+
   signUp: Fn<T> = catchAsync(async (req, res, next) => {
     const { name, email, password } = req.body;
     if (!name || !email || !password) throw new BadRequestError('Missing some fields');
-    new CREATED({
-      message: 'Sign in successfully',
-      metadata: await AccessService.signUp({ name, email, password }, res),
+    new OK({
+      message: 'Check code in your gmail',
+      metadata: await AccessService.signUp({ name, email, password }),
     }).send(res);
   });
 

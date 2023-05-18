@@ -1,11 +1,17 @@
 import { Response } from 'express';
+import nodemailer from 'nodemailer';
+import { config } from '../root/configs';
 import { BadRequestError } from '../root/responseHandler/error.response';
 import { getInfodata } from '../root/utils';
 import {
+  IGetAndValidateUser,
   IGetMeParams,
+  ISendCodeAgain,
+  ISendGmail,
   ISendResToClient,
   ISignInParams,
   ISignUpParams,
+  IVerfiyCode,
 } from './interfaces/services';
 import { performTransaction } from '../root/utils/performTransaction';
 import { Tokens } from './constant';
@@ -22,50 +28,95 @@ export default class AccessService {
   }
 
   static async signIn({ email, password }: ISignInParams, res: Response) {
-    //TODO 1: Check email in dbs
-    const foundUser = await User.findByEmail({ email });
+    const foundUser = await this.getAndValidateUser({ email, password });
 
-    if (!foundUser) throw new BadRequestError('User is not registered');
-
-    //TODO 2: Check match password
-    const isMatchPassword = await foundUser.isMatchPassword(password);
-    if (!isMatchPassword) throw new BadRequestError('Password is not correct');
+    if (!foundUser.isVerified)
+      throw new BadRequestError(`User haven't verify code! Try sign-up again`);
 
     return this.sendResToClient({ Doc: foundUser, fields: ['_id', 'email', 'userProfile'] }, res);
   }
 
-  static async signUp({ name, email, password }: ISignUpParams, res: Response) {
+  static async verifyCode({ email, password, code }: IVerfiyCode, res: Response) {
+    const foundUser = await this.getAndValidateUser({ email, password });
+
+    if (foundUser.code !== code) throw new BadRequestError('Code is invalid');
+
+    const isValid = Number(new Date(foundUser.expiresIn)) - Date.now();
+    if (isValid < 0) throw new BadRequestError('Code is expired! Please re-sent code again');
+
+    await foundUser.updateOne({
+      $set: {
+        code: null,
+        expiresIn: null,
+        isVerified: true,
+      },
+    });
+
+    await Workspace.create({
+      name: 'Main Workspace',
+      createdBy: foundUser._id,
+      isMain: true,
+    });
+
+    return this.sendResToClient({ Doc: foundUser, fields: ['_id', 'email', 'userProfile'] }, res);
+  }
+
+  static async sendCodeAgain({ email, password }: ISendCodeAgain) {
+    const foundUser = await this.getAndValidateUser({ email, password });
+
+    const { code, codeLifeTimeMinutes, expiresIn } = foundUser.generateCode();
+
+    await foundUser.updateOne({
+      $set: {
+        code: code,
+        expiresIn: expiresIn,
+      },
+    });
+
+    return this.sendGamil({ email, code, codeLifeTimeMinutes });
+  }
+
+  static async signUp({ name, email, password }: ISignUpParams) {
     return await performTransaction(async (session) => {
       //TODO 1: Check if email exist
-      const foundUser = await User.findByEmail({ email });
+      let foundUser = await User.findByEmail({ email });
 
       //TODO 2: If exist => return error
-      if (foundUser) throw new BadRequestError('User is already registered');
+      if (foundUser && foundUser.isVerified)
+        throw new BadRequestError('User is already registered');
 
-      //TODO 3: Create new User
-      const [newUserProfile] = await UserProfile.create([{ name }], { session });
+      if (!foundUser) {
+        //TODO 3: Create new User
+        const [newUserProfile] = await UserProfile.create([{ name }], { session });
 
-      const [newUser] = await User.create(
-        [
-          {
-            email,
-            password,
-            userProfile: {
-              name: newUserProfile.name,
+        const [createdNewUser] = await User.create(
+          [
+            {
+              email,
+              password,
+              userProfile: {
+                name: newUserProfile.name,
+              },
             },
+          ],
+          { session }
+        );
+        foundUser = createdNewUser;
+      }
+
+      const { code, codeLifeTimeMinutes, expiresIn } = foundUser.generateCode();
+
+      await foundUser.updateOne(
+        {
+          $set: {
+            code: code,
+            expiresIn: expiresIn,
           },
-        ],
+        },
         { session }
       );
 
-      await Workspace.create({
-        name: 'Main workspace',
-        isMain: true,
-        createdBy: newUser._id,
-      });
-
-      //TODO 4: Create token -> send it to client
-      return this.sendResToClient({ Doc: newUser, fields: ['_id', 'email', 'userProfile'] }, res);
+      await this.sendGamil({ email, code, codeLifeTimeMinutes });
     });
   }
 
@@ -101,5 +152,39 @@ export default class AccessService {
         object: Doc,
       }),
     };
+  }
+
+  static async sendGamil({ email, code, codeLifeTimeMinutes }: ISendGmail) {
+    // const accessToken = await oAuth2Client.getAccessToken();
+    const transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      service: 'gmail',
+      port: 465,
+      secure: true,
+      auth: {
+        type: 'OAUTH2',
+        user: 'nnthuan2000@gmail.com',
+        clientId: config.email.clientId,
+        clientSecret: config.email.clientSecret,
+        refreshToken: config.email.refreshToken,
+      },
+    });
+
+    await transporter.sendMail({
+      from: '"Monday" <nnthuan2000@gmail.com', // sender address
+      to: email, // list of receivers
+      subject: 'Verify your email ✔', // Subject line
+      text: 'Hello world?', // plain text body
+      html: `<p>Your code: <b>${code}</b><br/>This email is only valid for ${codeLifeTimeMinutes} minutes</p>`, // html body
+    });
+  }
+
+  static async getAndValidateUser({ email, password }: IGetAndValidateUser) {
+    const foundUser = await User.findByEmail({ email });
+    if (!foundUser) throw new BadRequestError('User is not registerd');
+
+    const isCorrectPassword = foundUser.isMatchPassword(password);
+    if (!isCorrectPassword) throw new BadRequestError('User is not registered');
+    return foundUser;
   }
 }

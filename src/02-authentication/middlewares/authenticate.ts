@@ -25,6 +25,9 @@ export const authenticate = catchAsync<IRequestWithAuth>(async (req, res, next) 
     if (!foundUser)
       throw new AuthFailureError('This User is not belong token! Please log in again');
 
+    if (!foundUser.isVerified)
+      throw new AuthFailureError(`This account have't verify code! Please sign-up again`);
+
     req.user = foundUser;
 
     return next();

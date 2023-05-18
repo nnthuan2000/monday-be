@@ -30,6 +30,18 @@ var userSchema = new Schema<IUser, UserModel, IUserMethods>(
       minlength: 8,
       select: false,
     },
+    code: {
+      type: String,
+      default: null,
+    },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    expiresIn: {
+      type: Date,
+      default: null,
+    },
     userProfile: {
       type: Schema.Types.Mixed,
       required: true,
@@ -49,6 +61,13 @@ userSchema.pre('save', async function (next) {
 
 userSchema.method('isMatchPassword', async function isMatchPassword(passwordInputed: string) {
   return await bcrypt.compare(passwordInputed, this.password);
+});
+
+userSchema.method('generateCode', function generateCode() {
+  const code = Math.floor(Math.random() * (999999 - 100000 + 1) + 100000).toString();
+  const codeLifeTimeMinutes = 5;
+  const expiresIn = new Date(Date.now() + codeLifeTimeMinutes * 60 * 1000);
+  return { code, codeLifeTimeMinutes, expiresIn };
 });
 
 userSchema.method('generateTokens', function generateTokens() {
@@ -84,6 +103,9 @@ userSchema.static(
     selectOptions = {
       email: 1,
       password: 1,
+      code: 1,
+      isVerified: 1,
+      expiresIn: 1,
       userProfile: 1,
     },
   }: IFindByEmailParams) {
