@@ -54,7 +54,7 @@ export default class BoardService {
         },
         populate: {
           path: 'belongType',
-          select: '_id name',
+          select: '_id name icon color',
         },
       })
       .populate({
