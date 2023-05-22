@@ -36,8 +36,9 @@ export default class AccessService {
     return this.sendResToClient({ Doc: foundUser, fields: ['_id', 'email', 'userProfile'] }, res);
   }
 
-  static async verifyCode({ email, password, code }: IVerfiyCode, res: Response) {
-    const foundUser = await this.getAndValidateUser({ email, password });
+  static async verifyCode({ email, code }: IVerfiyCode, res: Response) {
+    const foundUser = await User.findByEmail({ email });
+    if (!foundUser) throw new BadRequestError('User is not found');
 
     if (foundUser.code !== code) throw new BadRequestError('Code is invalid');
 

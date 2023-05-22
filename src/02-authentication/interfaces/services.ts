@@ -6,7 +6,8 @@ export interface ISignInParams {
   password: string;
 }
 
-export interface IVerfiyCode extends ISignInParams {
+export interface IVerfiyCode {
+  email: string;
   code: string;
 }
 
