@@ -1,3 +1,4 @@
+import { Types } from 'mongoose';
 import { IRequestQuery } from '../../root/app.interfaces';
 import { IBoard } from './board';
 
@@ -17,6 +18,7 @@ export interface IGetBoardParams {
 
 export interface ICreateBoardParams {
   workspaceId: string;
+  userId: Types.ObjectId;
   data: IBoard;
 }
 

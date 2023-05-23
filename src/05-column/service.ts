@@ -18,24 +18,23 @@ export default class ColumnService {
   static async createColumn({
     boardId,
     typeId,
+    userId,
     position,
   }: ICreateColumnParams): Promise<ICreateColumnResult> {
     if (!typeId || !position)
       throw new BadRequestError('Missing some fields to create a new column');
-    const foundType = await Type.findById(typeId);
-
-    if (!foundType) throw new BadRequestError('Type is not found');
 
     return await performTransaction<ICreateColumnResult>(async (session) => {
-      const { createdNewColumns, defaultValue, tasksColumnsIds } = await Column.createNewColumns({
+      const { createdNewColumn, defaultValues, tasksColumnsIds } = await Column.createNewColumn({
         boardId,
-        typeDoc: foundType,
+        typeId,
         position: position,
+        userId,
         session,
       });
       return {
-        createdNewColumn: createdNewColumns[0],
-        defaultValue,
+        createdNewColumn,
+        defaultValues,
         tasksColumnsIds,
       };
     });

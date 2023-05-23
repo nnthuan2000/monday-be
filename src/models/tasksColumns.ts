@@ -53,7 +53,7 @@ tasksColumnsSchema.static(
   async function createTasksColumnsByColumn({
     boardDoc,
     columnDoc,
-    defaultValue,
+    defaultValues,
   }: ICreateTasksColumnsByColumn) {
     const boardWithGroups = await boardDoc.populate({
       path: 'groups',
@@ -74,9 +74,9 @@ tasksColumnsSchema.static(
       const updatingTaskPromises = tasks.map((task) =>
         createSetOfTasksColumnsByColumn({
           columnId: columnDoc._id,
-          defaultValue,
+          defaultValue: defaultValues.at(-1)!,
           taskDoc: task,
-          typeOfValue: defaultValue ? 'multiple' : 'single',
+          typeOfValue: defaultValues.length !== 0 ? 'multiple' : 'single',
           session,
         })
       );

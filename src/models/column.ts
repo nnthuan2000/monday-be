@@ -1,12 +1,13 @@
-import { Schema } from 'mongoose';
+import { Schema, Types } from 'mongoose';
 
 import {
   ColumnModel,
   IColumn,
   IColumnDoc,
   IColumnMethods,
+  ICreateNewColumn,
+  ICreateNewColumnResult,
   ICreateNewColumns,
-  ICreateNewColumnsResult,
   IDeleteColumn,
 } from '../05-column/interfaces/column';
 import db from '../root/db';
@@ -36,6 +37,15 @@ var columnSchema = new Schema<IColumn, ColumnModel, IColumnMethods>(
       reuqired: true,
       ref: 'Type',
     },
+    defaultValues: {
+      type: [
+        {
+          type: Schema.Types.ObjectId,
+          ref: 'DefaultValue',
+        },
+      ],
+      default: [],
+    },
   },
   {
     collection: COLLECTION_NAME,
@@ -44,82 +54,103 @@ var columnSchema = new Schema<IColumn, ColumnModel, IColumnMethods>(
 );
 
 columnSchema.static(
+  'createNewColumn',
+  async function createNewColumn({
+    boardId,
+    typeId,
+    userId,
+    position,
+    session,
+  }: ICreateNewColumn): Promise<ICreateNewColumnResult> {
+    const foundType = await Type.findById(typeId, {}, { session });
+    if (!foundType) throw new BadRequestError('Type is not found');
+
+    const createdNewDefaultValues = await DefaultValue.createNewDefaultValuesByColumn({
+      boardId: new Types.ObjectId(boardId),
+      typeDoc: foundType,
+      createdBy: userId,
+      session,
+    });
+
+    const [createdNewColumn] = await this.create([
+      {
+        name: foundType.name,
+        belongType: foundType._id,
+        position,
+        defaultValues: createdNewDefaultValues.map((value) => value._id),
+      },
+    ]);
+
+    const updatedBoard = await Board.findByIdAndUpdate(
+      boardId,
+      {
+        $push: {
+          columns: createdNewColumn,
+        },
+      },
+      { session }
+    );
+    if (!updatedBoard) throw new BadRequestError('Board is not found');
+
+    const tasksColumnsIds = await TasksColumns.createTasksColumnsByColumn({
+      boardDoc: updatedBoard,
+      columnDoc: createdNewColumn,
+      defaultValues: createdNewDefaultValues,
+      session,
+    });
+
+    return {
+      createdNewColumn,
+      defaultValues: createdNewDefaultValues,
+      tasksColumnsIds,
+    };
+  }
+);
+
+columnSchema.static(
   'createNewColumns',
   async function createNewColumns({
     boardId,
-    typeDoc,
-    position,
+    userId,
     session,
-  }: ICreateNewColumns): Promise<ICreateNewColumnsResult> {
-    let createdNewColumns: NonNullable<IColumnDoc>[];
-    if (typeDoc) {
-      createdNewColumns = await this.create(
-        [
-          {
-            name: typeDoc.name,
-            position: position,
-            belongType: typeDoc._id,
-          },
-        ],
-        { session }
-      );
+  }: ICreateNewColumns): Promise<NonNullable<IColumnDoc>[]> {
+    const findingStatusType = Type.findOne({ name: MultipleValueTypes.STATUS });
+    const findingDateType = Type.findOne({ name: SingleValueTypes.DATE });
+    const foundTypes = await Promise.all([findingStatusType, findingDateType]);
 
-      const updatedBoard = await Board.findByIdAndUpdate(
-        boardId,
-        {
-          $push: {
-            columns: createdNewColumns[0]._id,
-          },
-        },
-        { session }
-      );
-      if (!updatedBoard) throw new BadRequestError('Board is not found');
-
-      const foundDefaultValue = await DefaultValue.findOne(
-        { belongType: typeDoc._id },
-        {},
-        { session }
-      ).select('_id value color');
-
-      const tasksColumnsIds = await TasksColumns.createTasksColumnsByColumn({
-        boardDoc: updatedBoard,
-        columnDoc: createdNewColumns[0],
-        defaultValue: foundDefaultValue,
+    const newColumnObjs: IColumn[] = [];
+    for (const [index, type] of foundTypes.entries()) {
+      const createdNewDefaultValues = await DefaultValue.createNewDefaultValuesByColumn({
+        boardId: new Types.ObjectId(boardId),
+        typeDoc: type!,
+        createdBy: userId,
         session,
       });
 
-      return {
-        createdNewColumns,
-        defaultValue: foundDefaultValue,
-        tasksColumnsIds,
-      };
-
-      ////
-    } else {
-      const findingStatusType = Type.findOne({ name: MultipleValueTypes.STATUS }).lean();
-      const findingDateType = Type.findOne({ name: SingleValueTypes.DATE }).lean();
-      const [foundStatusType, foundDateType] = await Promise.all([
-        findingStatusType,
-        findingDateType,
-      ]);
-      createdNewColumns = await this.insertMany(
-        [
-          {
-            name: foundStatusType!.name,
-            position: 1,
-            belongType: foundStatusType!._id,
-          },
-          {
-            name: foundDateType!.name,
-            position: 2,
-            belongType: foundDateType!._id,
-          },
-        ],
-        { session }
-      );
+      newColumnObjs.push({
+        name: type!.name,
+        position: index + 1,
+        belongType: type!._id,
+        defaultValues: createdNewDefaultValues.map((value) => value._id),
+      });
     }
 
-    return { createdNewColumns };
+    const createdNewColumns = await this.insertMany(newColumnObjs, { session });
+
+    const gettingDefaultValuesFromColPromises = createdNewColumns.map((column) =>
+      column.populate([
+        {
+          path: 'belongType',
+          select: '_id name color icon',
+        },
+        {
+          path: 'defaultValues',
+          select: '_id value color',
+        },
+      ])
+    );
+
+    return await Promise.all(gettingDefaultValuesFromColPromises);
   }
 );
 

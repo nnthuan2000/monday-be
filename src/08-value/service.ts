@@ -56,20 +56,18 @@ export default class ValueService {
         session,
       }).lean();
       if (!updatedValue) throw new BadRequestError('Value is not found');
-      if (!updatedValue.canEditColor && updatedValue.color)
+      if (!updatedValue.canEditColor && updationData.color)
         throw new BadRequestError(`This type can't edit color`);
       return updatedValue;
     });
   }
 
   static async setValue({ tasksColumnsId, value, valueId }: ISetValueParams) {
-    if ((value && valueId) || (!value && !valueId))
-      throw new BadRequestError('Invalid transmitted data');
+    if (!value && !valueId) throw new BadRequestError('Invalid transmitted data');
     if (valueId) {
       const foundDefaultValue = await DefaultValue.findById(valueId).lean();
       if (!foundDefaultValue) throw new BadRequestError('Value is not found');
     }
-    console.log(value, valueId, tasksColumnsId);
 
     const updatedTasksColumns = await TasksColumns.findByIdAndUpdate(tasksColumnsId, {
       $set: {

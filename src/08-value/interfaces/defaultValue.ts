@@ -1,6 +1,7 @@
-import { Model, Types } from 'mongoose';
+import { ClientSession, Model, Types } from 'mongoose';
 import { Doc, DocObj } from '../../root/app.interfaces';
 import { MultipleValueTypes } from '../../05-column/constant';
+import { ITypeDoc } from '../../05-column/interfaces/type';
 
 export interface IDefaultValue {
   value: string;
@@ -21,6 +22,13 @@ export interface IInitDefaultValues {
   color: string;
 }
 
+export interface ICreateNewDefaultValuesByColumn {
+  boardId: Types.ObjectId;
+  typeDoc: NonNullable<ITypeDoc>;
+  createdBy: Types.ObjectId;
+  session: ClientSession;
+}
+
 // For instance methods
 
 export type IDefaultValueDoc = Doc<IDefaultValue, IDefaultValueMethods>;
@@ -30,5 +38,11 @@ export interface IDefaultValueMethods {}
 
 // For statics
 export interface DefaultValueModel extends Model<IDefaultValue, {}, IDefaultValueMethods> {
-  initDefaultValues({ type, icon, color }: IInitDefaultValues): Promise<null>;
+  createNewDefaultValuesByColumn({
+    boardId,
+    createdBy,
+    typeDoc,
+    session,
+  }: ICreateNewDefaultValuesByColumn): Promise<NonNullable<IDefaultValueDoc>[]>;
+  initDefaultValues({ type }: IInitDefaultValues): Promise<null>;
 }

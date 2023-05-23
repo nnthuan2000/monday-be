@@ -19,7 +19,7 @@ export interface ITasksColumns {
 export interface ICreateTasksColumnsByColumn {
   boardDoc: NonNullable<IBoardDoc>;
   columnDoc: NonNullable<IColumnDoc>;
-  defaultValue: IDefaultValueDoc;
+  defaultValues: NonNullable<IDefaultValueDoc>[];
   session: ClientSession;
 }
 
@@ -40,7 +40,7 @@ export interface TasksColumnsModel extends Model<ITasksColumns, {}, ITasksColumn
   createTasksColumnsByColumn({
     boardDoc,
     columnDoc,
-    defaultValue,
+    defaultValues,
     session,
   }: ICreateTasksColumnsByColumn): Promise<Types.ObjectId[]>;
   deleteTasksColumnsByColumn({

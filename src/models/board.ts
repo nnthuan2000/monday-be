@@ -67,6 +67,7 @@ boardSchema.static(
   'createNewBoard',
   async function createNewBoard({
     workspaceDoc,
+    userId,
     data,
     session,
   }: ICreateNewBoard): Promise<ICreateNewBoardResult> {
@@ -90,8 +91,9 @@ boardSchema.static(
     );
 
     // Create new 2 columns, 2 groups and each group will create 2 new task with default values of 2 created columns
-    const { createdNewColumns } = await Column.createNewColumns({
+    const createdNewColumns = await Column.createNewColumns({
       boardId: createdNewBoard._id,
+      userId,
       session,
     });
 
@@ -111,7 +113,7 @@ boardSchema.static(
     return {
       ...createdNewBoard.toObject(),
       columns: convertToArrObj({
-        fields: ['_id', 'name', 'position', 'belongType'],
+        fields: ['_id', 'name', 'position', 'belongType', 'defaultValues'],
         objects: createdNewColumns,
       }),
       groups: convertToArrObj({
