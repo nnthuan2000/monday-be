@@ -3,10 +3,9 @@ import valueController from './controller';
 
 const valueRouter = Router();
 
-valueRouter
-  .route('/values/:id')
-  .patch(valueController.updateOne as any)
-  .delete(valueController.deleteOne as any);
+valueRouter.patch('/values/:id', valueController.updateOne as any);
+
+valueRouter.delete('/columns/:columnId/values/:id', valueController.deleteOne as any);
 
 valueRouter
   .route('/board/:boardId/column/:columnId/values')

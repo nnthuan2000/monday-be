@@ -67,6 +67,7 @@ class ValueController<T extends IRequestWithAuth> implements IFullController<T> 
 
   deleteOne: Fn<T> = catchAsync(async (req, res, next) => {
     await ValueService.deleteValueByType({
+      columnId: req.params.columnId,
       defaultValueId: req.params.id,
     });
     new OK({

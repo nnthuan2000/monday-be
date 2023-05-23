@@ -40,13 +40,30 @@ export default class ValueService {
       throw new BadRequestError(`This type can not create more value`);
     }
 
-    const createdNewValue = await DefaultValue.create({
-      ...data,
-      belongBoard: boardId,
-      belongType: foundColumn.belongType,
-      createdBy: userId,
+    return await performTransaction(async (session) => {
+      const [createdNewValue] = await DefaultValue.create(
+        [
+          {
+            ...data,
+            belongBoard: boardId,
+            belongType: foundColumn.belongType,
+            createdBy: userId,
+          },
+        ],
+        { session }
+      );
+
+      await foundColumn.updateOne(
+        {
+          $push: {
+            defaultValues: createdNewValue._id,
+          },
+        },
+        { session }
+      );
+
+      return createdNewValue;
     });
-    return createdNewValue;
   }
 
   static async updateValueByType({ defaultValueId, updationData }: IUpdateValueByTypeParams) {
@@ -79,7 +96,7 @@ export default class ValueService {
     return updatedTasksColumns;
   }
 
-  static async deleteValueByType({ defaultValueId }: IDeleteValueByTypeParams) {
+  static async deleteValueByType({ columnId, defaultValueId }: IDeleteValueByTypeParams) {
     return await performTransaction(async (session) => {
       const deletedValue = await DefaultValue.findByIdAndDelete(defaultValueId, { session });
       if (!deletedValue) throw new BadRequestError('Value is not found');
@@ -102,7 +119,18 @@ export default class ValueService {
 
       if (foundAllTasksColumnsInBoard.length !== 0)
         throw new BadRequestError(`You can't delete value while in use`);
-      return deletedValue;
+
+      const updatedColumn = await Column.findByIdAndUpdate(
+        columnId,
+        {
+          $pull: {
+            defaultValues: deletedValue._id,
+          },
+        },
+        { session }
+      );
+
+      if (!updatedColumn) throw new BadRequestError(`Column is not found`);
     });
   }
 }

@@ -171,8 +171,14 @@ columnSchema.static(
     );
     if (!updatedBoard) throw new BadRequestError('Board is not found');
 
+    // Delete all default values of this column
+    const deleteingDefaultValuesOfColumnPromise = DefaultValue.deleteMany(
+      { _id: { $in: deletedColumn.defaultValues } },
+      { session }
+    );
+
     // Delete all values in this column
-    const deleteTasksColumns = await TasksColumns.find(
+    const findingTasksColumnsPromise = TasksColumns.find(
       {
         belongColumn: { $in: deletedColumn._id },
       },
@@ -180,8 +186,13 @@ columnSchema.static(
       { session }
     );
 
-    // Remove all task id
-    const deleteingTasksColumnsPromises = deleteTasksColumns.map((tasksColumns) =>
+    const [_, foundTasksColumns] = await Promise.all([
+      deleteingDefaultValuesOfColumnPromise,
+      findingTasksColumnsPromise,
+    ]);
+
+    // Remove all tasksColumn id away from task
+    const deleteingTasksColumnsPromises = foundTasksColumns.map((tasksColumns) =>
       TasksColumns.deleteTasksColumnsByColumn({
         tasksColumnsDoc: tasksColumns,
         session,
