@@ -86,6 +86,28 @@ export default class AccessService {
       if (foundUser && foundUser.isVerified)
         throw new BadRequestError('User is already registered');
 
+      if (foundUser && !foundUser.isVerified) {
+        await UserProfile.findByIdAndUpdate(
+          foundUser.id,
+          {
+            name,
+          },
+          { session }
+        );
+
+        await foundUser.updateOne(
+          {
+            $set: {
+              password,
+              userProfile: {
+                name,
+              },
+            },
+          },
+          { session }
+        );
+      }
+
       if (!foundUser) {
         //TODO 3: Create new User
         const [newUserProfile] = await UserProfile.create([{ name }], { session });
@@ -93,6 +115,7 @@ export default class AccessService {
         const [createdNewUser] = await User.create(
           [
             {
+              _id: newUserProfile._id,
               email,
               password,
               userProfile: {
