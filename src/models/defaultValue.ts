@@ -2,11 +2,13 @@ import { Schema, model } from 'mongoose';
 import db from '../root/db';
 import {
   DefaultValueModel,
+  ICreateNewDefaultValuesByColumn,
   IDefaultValue,
   IDefaultValueMethods,
   IInitDefaultValues,
 } from '../08-value/interfaces/defaultValue';
 import Type from './type';
+import defaultValues from '../08-value/constant';
 
 const DOCUMENT_NAME = 'DefaultValue';
 const COLLECTION_NAME = 'DefaultValues';
@@ -56,6 +58,44 @@ defaultValueSchema.static(
       belongType: createdType._id,
       canEditColor: false,
     });
+  }
+);
+
+defaultValueSchema.static(
+  'createNewDefaultValuesByColumn',
+  async function createNewDefaultValuesByColumn({
+    boardId,
+    typeDoc,
+    createdBy,
+    session,
+  }: ICreateNewDefaultValuesByColumn) {
+    const defaultValuesOfType = defaultValues[typeDoc.name];
+    if (defaultValuesOfType) {
+      const convertedToDefaultValues: IDefaultValue[] = defaultValuesOfType.map((defaultValue) => ({
+        ...defaultValue,
+        belongType: typeDoc._id,
+        belongBoard: boardId,
+        createdBy,
+        canEditColor: true,
+      }));
+
+      const insertedDefaultValues = await DefaultValue.insertMany(convertedToDefaultValues, {
+        session,
+      });
+
+      const foundDefaultValue = await DefaultValue.findOne(
+        {
+          belongType: typeDoc._id,
+        },
+        {},
+        { session }
+      );
+
+      const values = [...insertedDefaultValues, foundDefaultValue!];
+
+      return values;
+    }
+    return [];
   }
 );
 

@@ -52,10 +52,16 @@ export default class BoardService {
         options: {
           sort: { position: 1 },
         },
-        populate: {
-          path: 'belongType',
-          select: '_id name icon color',
-        },
+        populate: [
+          {
+            path: 'belongType defaultValues',
+            select: '_id name icon color',
+          },
+          {
+            path: 'defaultValues',
+            select: '_id value color',
+          },
+        ],
       })
       .populate({
         path: 'groups',
@@ -85,12 +91,13 @@ export default class BoardService {
     return foundBoard;
   }
 
-  static async createBoard({ workspaceId, data }: ICreateBoardParams) {
+  static async createBoard({ workspaceId, userId, data }: ICreateBoardParams) {
     const foundWorkspace = await Workspace.findById(workspaceId);
     if (!foundWorkspace) throw new BadRequestError('Workspace is not exist');
     return await performTransaction(async (session) => {
       const createdNewBoard = await Board.createNewBoard({
         workspaceDoc: foundWorkspace,
+        userId,
         data,
         session,
       });

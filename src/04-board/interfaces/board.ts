@@ -19,6 +19,7 @@ export interface IBoard {
 
 export interface ICreateNewBoard {
   workspaceDoc: NonNullable<IWorkspaceDoc>;
+  userId: Types.ObjectId;
   data: IBoard;
   session: ClientSession;
 }

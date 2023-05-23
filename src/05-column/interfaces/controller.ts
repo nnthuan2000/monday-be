@@ -11,6 +11,6 @@ export interface IColumnController<T extends Request> extends IControllerWithout
 
 export interface ICreateColumnResult {
   createdNewColumn: NonNullable<IColumnDoc>;
-  defaultValue: IDefaultValueDoc;
+  defaultValues: NonNullable<IDefaultValueDoc>[];
   tasksColumnsIds: Types.ObjectId[];
 }

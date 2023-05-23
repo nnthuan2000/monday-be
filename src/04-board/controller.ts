@@ -44,6 +44,7 @@ class BoardController<T extends IRequestWithAuth> implements IBoardController<T>
   createOne: Fn<T> = catchAsync(async (req, res, next) => {
     const createdBoard = await BoardService.createBoard({
       workspaceId: req.params.workspaceId,
+      userId: req.user._id,
       data: req.body,
     });
 

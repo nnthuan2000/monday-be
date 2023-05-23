@@ -7,23 +7,31 @@ export interface IColumn {
   name: string;
   position: number;
   belongType: Types.ObjectId;
+  defaultValues: Types.ObjectId[];
 }
 
 /////////////////////////////////////
 /////////////////////////////////////
 /////////////////////////////////////
 
-export interface ICreateNewColumns {
-  boardId: string | Types.ObjectId;
-  typeDoc?: ITypeDoc;
-  position?: number;
+export interface ICreateNewColumn {
+  boardId: string;
+  typeId: string;
+  position: number;
+  userId: Types.ObjectId;
   session: ClientSession;
 }
 
-export interface ICreateNewColumnsResult {
-  createdNewColumns: NonNullable<IColumnDoc>[];
-  defaultValue?: IDefaultValueDoc;
-  tasksColumnsIds?: Types.ObjectId[];
+export interface ICreateNewColumns {
+  boardId: string | Types.ObjectId;
+  userId: Types.ObjectId;
+  session: ClientSession;
+}
+
+export interface ICreateNewColumnResult {
+  createdNewColumn: NonNullable<IColumnDoc>;
+  defaultValues: NonNullable<IDefaultValueDoc>[];
+  tasksColumnsIds: Types.ObjectId[];
 }
 
 export interface IDeleteColumn {
@@ -45,11 +53,18 @@ export interface IColumnMethods {}
 
 // For statics
 export interface ColumnModel extends Model<IColumn, {}, IColumnMethods> {
-  createNewColumns({
+  createNewColumn({
     boardId,
-    typeDoc,
+    typeId,
+    userId,
     position,
     session,
-  }: ICreateNewColumns): Promise<ICreateNewColumnsResult>;
+  }: ICreateNewColumn): Promise<ICreateNewColumnResult>;
+
+  createNewColumns({
+    boardId,
+    userId,
+    session,
+  }: ICreateNewColumns): Promise<NonNullable<IColumnDoc>[]>;
   deleteColumn({ boardId, columnId, session }: IDeleteColumn): Promise<null>;
 }
