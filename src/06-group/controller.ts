@@ -7,7 +7,8 @@ class GroupController<T extends IRequestWithAuth> implements IControllerWithoutG
   createOne: Fn<T> = catchAsync(async (req, res, next) => {
     const createdNewGroup = await GroupService.createGroup({
       boardId: req.params.boardId,
-      data: req.body,
+      groupIds: req.body.groupIds,
+      data: req.body.data,
     });
 
     new CREATED({
@@ -32,8 +33,24 @@ class GroupController<T extends IRequestWithAuth> implements IControllerWithoutG
     }).send(res);
   });
 
+  updateAllGroups: Fn<T> = catchAsync(async (req, res, next) => {
+    const updatedAllGroups = await GroupService.updateAllGroups({
+      groupIds: req.body.groupIds,
+    });
+    new OK({
+      message: 'Update all groups successfully',
+      metadata: {
+        groups: updatedAllGroups,
+      },
+    });
+  });
+
   deleteOne: Fn<T> = catchAsync(async (req, res, next) => {
-    await GroupService.deleteGroup({ boardId: req.params.boardId, groupId: req.params.id });
+    await GroupService.deleteGroup({
+      boardId: req.params.boardId,
+      groupId: req.params.id,
+      groupIds: req.body.groupIds,
+    });
     new OK({
       message: 'Delete group successfully',
       metadata: null,
