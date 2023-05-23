@@ -12,6 +12,12 @@ export interface IGroup {
 /////////////////////////////////////
 /////////////////////////////////////
 
+export interface ICreateNewGroup {
+  boardId: string;
+  data: IGroup;
+  session: ClientSession;
+}
+
 export interface ICreateNewGroups {
   boardId: Types.ObjectId | string;
   columns?: NonNullable<IColumnDoc>[];
