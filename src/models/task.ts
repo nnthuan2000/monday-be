@@ -1,10 +1,13 @@
 import { Schema } from 'mongoose';
 import {
+  ICreateNewTask,
   ICreateNewTasks,
   IDeleteTask,
+  IFindByIdAndUpdatePosition,
   ITask,
   ITaskDoc,
   ITaskMethods,
+  IUpdateAllPositionTasks,
   TaskModel,
 } from '../07-task/interfaces/task';
 import db from '../root/db';
@@ -41,6 +44,45 @@ var taskSchema = new Schema<ITask, TaskModel, ITaskMethods>(
   {
     collection: COLLECTION_NAME,
     timestamps: true,
+  }
+);
+
+taskSchema.static(
+  'findByIdAndUpdatePosition',
+  async function findByIdAndUpdatePosition({
+    taskId,
+    position,
+    session,
+  }: IFindByIdAndUpdatePosition): Promise<NonNullable<ITaskDoc>> {
+    const updatedTask = await this.findByIdAndUpdate(
+      taskId,
+      {
+        $set: {
+          position: position,
+        },
+      },
+      { session }
+    );
+
+    if (!updatedTask) throw new BadRequestError(`Task with ${taskId} is not found`);
+    return updatedTask;
+  }
+);
+
+taskSchema.static(
+  'createNewTask',
+  async function createNewtAsk({ groupId, data, session }: ICreateNewTask) {
+    const [createdNewTask] = await this.create([{ ...data }], { session });
+    const updatedGroup = await Group.findByIdAndUpdate(
+      groupId,
+      {
+        $push: {
+          tasks: createdNewTask._id,
+        },
+      },
+      { session }
+    );
+    if (!updatedGroup) throw new BadRequestError('Group is not found');
   }
 );
 
@@ -84,6 +126,17 @@ taskSchema.static(
       );
     }
     return createdNewTasks;
+  }
+);
+
+taskSchema.static(
+  'updateAllPositionTasks',
+  async function updateAllPositionTasks({ tasks, session }: IUpdateAllPositionTasks) {
+    const updatingAllTaskPromises = tasks.map((task, index) =>
+      this.findByIdAndUpdatePosition({ taskId: task._id, position: index, session })
+    );
+
+    return await Promise.all(updatingAllTaskPromises);
   }
 );
 

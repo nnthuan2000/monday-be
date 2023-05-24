@@ -5,8 +5,10 @@ import {
   ICreateTaskParams,
   IDeleteTaskParams,
   IGetTaskParams,
+  IUpdateAllTasksParams,
   IUpdateTaskParams,
 } from './interfaces/services';
+import { ITaskDoc } from './interfaces/task';
 
 export default class TaskService {
   static async getTask({ taskId }: IGetTaskParams) {
@@ -15,9 +17,27 @@ export default class TaskService {
     return foundTask;
   }
 
-  static async createTask({ groupId, data }: ICreateTaskParams) {
+  static async createTask({ groupId, tasks }: ICreateTaskParams) {
     return await performTransaction(async (session) => {
-      const [createdNewTask] = await Task.createNewTasks({ groupId, data, session });
+      let createdNewTask: ITaskDoc = null;
+      const updatingPositionTasks: Promise<NonNullable<ITaskDoc>>[] = [];
+      for (const [index, task] of tasks.entries()) {
+        if (task._id) {
+          const updatingTask = Task.findByIdAndUpdatePosition({
+            taskId: task._id,
+            position: index,
+            session,
+          });
+
+          updatingPositionTasks.push(updatingTask);
+        } else {
+          createdNewTask = await Task.createNewTask({ groupId, data: { ...task }, session });
+        }
+      }
+
+      await Promise.all(updatingPositionTasks);
+      if (createdNewTask) throw new BadRequestError('Missing some fields when create a new task');
+
       return createdNewTask;
     });
   }
@@ -28,9 +48,16 @@ export default class TaskService {
     return updatedTask;
   }
 
-  static async deleteTask({ groupId, taskId }: IDeleteTaskParams) {
+  static async updateAllTasks({ tasks }: IUpdateAllTasksParams) {
+    return await performTransaction(async (session) => {
+      return await Task.updateAllPositionTasks({ tasks, session });
+    });
+  }
+
+  static async deleteTask({ groupId, taskId, tasks }: IDeleteTaskParams) {
     return await performTransaction(async (session) => {
       await Task.deleteTask({ groupId, taskId, session });
+      await Task.updateAllPositionTasks({ tasks, session });
     });
   }
 }

@@ -9,14 +9,35 @@ export interface ITask {
   values: Types.ObjectId[];
 }
 
+export interface ITaskWithId extends ITask {
+  _id?: string;
+}
+
 /////////////////////////////////////
 /////////////////////////////////////
 /////////////////////////////////////
+
+export interface IFindByIdAndUpdatePosition {
+  taskId: string | Types.ObjectId;
+  position: number;
+  session: ClientSession;
+}
+
+export interface ICreateNewTask {
+  groupId: string | Types.ObjectId;
+  data: ITask;
+  session: ClientSession;
+}
 
 export interface ICreateNewTasks {
   groupId?: string;
   data?: ITask;
   columns?: IColumnDoc[];
+  session: ClientSession;
+}
+
+export interface IUpdateAllPositionTasks {
+  tasks: NonNullable<ITaskDoc>[];
   session: ClientSession;
 }
 
@@ -35,11 +56,25 @@ export interface ITaskMethods {}
 
 // For statics
 export interface TaskModel extends Model<ITask, {}, ITaskMethods> {
+  findByIdAndUpdatePosition({
+    taskId,
+    position,
+    session,
+  }: IFindByIdAndUpdatePosition): Promise<NonNullable<ITaskDoc>>;
+
+  createNewTask({ groupId, data, session }: ICreateNewTask): Promise<NonNullable<ITaskDoc>>;
+
   createNewTasks({
     groupId,
     columns,
     data,
     session,
   }: ICreateNewTasks): Promise<NonNullable<ITaskDoc>[]>;
+
+  updateAllPositionTasks({
+    tasks,
+    session,
+  }: IUpdateAllPositionTasks): Promise<NonNullable<ITaskDoc>>;
+
   deleteTask({ groupId, taskId, session }: IDeleteTask): Promise<null>;
 }

@@ -1,9 +1,10 @@
-import { IFullController, IRequestWithAuth } from '../root/app.interfaces';
+import { IRequestWithAuth } from '../root/app.interfaces';
 import { CREATED, OK } from '../root/responseHandler/success.response';
 import { Fn, catchAsync } from '../root/utils/catchAsync';
+import { ITaskController } from './interfaces/controller';
 import TaskService from './service';
 
-class TaskController<T extends IRequestWithAuth> implements IFullController<T> {
+class TaskController<T extends IRequestWithAuth> implements ITaskController<T> {
   getAll: Fn<T> = catchAsync(async (req, res, next) => {});
 
   getOne: Fn<T> = catchAsync(async (req, res, next) => {
@@ -22,7 +23,7 @@ class TaskController<T extends IRequestWithAuth> implements IFullController<T> {
   createOne: Fn<T> = catchAsync(async (req, res, next) => {
     const createdNewTask = await TaskService.createTask({
       groupId: req.params.groupId,
-      data: req.body,
+      tasks: req.body.tasks,
     });
 
     new CREATED({
@@ -46,8 +47,21 @@ class TaskController<T extends IRequestWithAuth> implements IFullController<T> {
     }).send(res);
   });
 
+  updateAllTasks: Fn<T> = catchAsync(async (req, res, next) => {
+    new OK({
+      message: 'Update all tasks successfully',
+      metadata: {
+        tasks: [],
+      },
+    }).send(res);
+  });
+
   deleteOne: Fn<T> = catchAsync(async (req, res, next) => {
-    await TaskService.deleteTask({ groupId: req.params.groupId, taskId: req.params.id });
+    await TaskService.deleteTask({
+      groupId: req.params.groupId,
+      taskId: req.params.id,
+      tasks: req.body.tasks,
+    });
     new OK({
       message: 'Delete task successfully',
       metadata: null,
