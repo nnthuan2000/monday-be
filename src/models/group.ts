@@ -1,11 +1,14 @@
 import { Schema } from 'mongoose';
 import {
   GroupModel,
+  ICreateNewGroup,
   ICreateNewGroups,
   IDeleteGroup,
+  IFindByIdAndUpdatePosition,
   IGroup,
   IGroupDoc,
   IGroupMethods,
+  IUpdateAllPositionGroups,
 } from '../06-group/interfaces/group';
 import db from '../root/db';
 import Board from './board';
@@ -43,22 +46,35 @@ var groupSchema = new Schema<IGroup, GroupModel, IGroupMethods>(
 );
 
 groupSchema.static(
-  'createNewGroups',
-  async function createNewGroups({ boardId, data, columns, session }: ICreateNewGroups) {
-    let createdNewGroups: NonNullable<IGroupDoc>[];
-    if (!columns) {
-      createdNewGroups = await this.create([{ ...data }], { session });
-      await Board.findByIdAndUpdate(
-        boardId,
-        {
-          $push: {
-            groups: createdNewGroups[0]._id,
-          },
+  'createNewGroup',
+  async function createNewGroup({
+    boardId,
+    data,
+    session,
+  }: ICreateNewGroup): Promise<NonNullable<IGroupDoc>> {
+    const [createdNewGroup] = await this.create([{ ...data }], { session });
+
+    const updatedBoard = await Board.findByIdAndUpdate(
+      boardId,
+      {
+        $push: {
+          groups: createdNewGroup._id,
         },
-        { session }
-      );
-      return createdNewGroups;
-    }
+      },
+      { session }
+    );
+    if (!updatedBoard) throw new BadRequestError('Board is not found');
+    return createdNewGroup;
+  }
+);
+
+groupSchema.static(
+  'createNewGroups',
+  async function createNewGroups({
+    columns,
+    session,
+  }: ICreateNewGroups): Promise<NonNullable<IGroupDoc>[]> {
+    //Create two new tasks and new values of these task with columns
 
     //Create two new tasks and new values of these task with columns
     let groupObjs: IGroup[] = [];
@@ -77,7 +93,7 @@ groupSchema.static(
       groupObjs.push(group);
     }
 
-    createdNewGroups = await this.insertMany(groupObjs, { session });
+    const createdNewGroups = await this.insertMany(groupObjs, { session });
 
     const groupPromises = createdNewGroups.map((group) =>
       group.populate({
@@ -95,6 +111,45 @@ groupSchema.static(
     );
 
     return await Promise.all(groupPromises);
+  }
+);
+
+groupSchema.static(
+  'findByIdAndUpdatePosition',
+  async function findByIdAndUpdatePosition({
+    groupId,
+    position,
+    session,
+  }: IFindByIdAndUpdatePosition): Promise<NonNullable<IGroupDoc>> {
+    const updatedGroup = await this.findByIdAndUpdate(
+      groupId,
+      {
+        $set: {
+          position: position,
+        },
+      },
+      { session }
+    );
+    if (!updatedGroup) throw new BadRequestError(`Group with id: ${groupId} is not found`);
+    return updatedGroup;
+  }
+);
+
+groupSchema.static(
+  'updateAllPositionGroups',
+  async function updateAllPositionGroups({
+    groups,
+    session,
+  }: IUpdateAllPositionGroups): Promise<NonNullable<IGroupDoc>[]> {
+    const updatingGroupPromises = groups.map((group, index) =>
+      this.findByIdAndUpdatePosition({
+        groupId: group._id,
+        position: index,
+        session,
+      })
+    );
+
+    return await Promise.all(updatingGroupPromises);
   }
 );
 
