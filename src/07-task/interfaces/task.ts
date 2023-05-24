@@ -27,6 +27,13 @@ export interface ICreateNewTasks {
   session: ClientSession;
 }
 
+export interface IUpdateAllPositionsInValue {
+  changedPositions: number[];
+  desiredPositions: number[];
+  taskId: Types.ObjectId;
+  session: ClientSession;
+}
+
 export interface IDeleteTask {
   groupId?: string;
   taskId: Types.ObjectId | string;
@@ -54,5 +61,11 @@ export interface TaskModel extends Model<ITask, {}, ITaskMethods> {
     selectedDefaultValues,
     session,
   }: ICreateNewTasks): Promise<NonNullable<ITaskDoc>[]>;
+  updateAllPositionsInValue({
+    changedPositions,
+    desiredPositions,
+    taskId,
+    session,
+  }: IUpdateAllPositionsInValue): Promise<null>;
   deleteTask({ groupId, taskId, session }: IDeleteTask): Promise<null>;
 }

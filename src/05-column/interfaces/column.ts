@@ -21,6 +21,12 @@ export interface IColumnWithId {
 /////////////////////////////////////
 /////////////////////////////////////
 
+export interface IFindByColumnAndUpdatePosition {
+  columnId: string | Types.ObjectId;
+  position: number;
+  session: ClientSession;
+}
+
 export interface ICreateNewColumn {
   boardId: string;
   typeId: string;
@@ -46,6 +52,11 @@ export interface ICreateNewColumnResult {
   tasksColumnsIds: Types.ObjectId[];
 }
 
+export interface IUpdateAllColumns {
+  columns: NonNullable<IColumnDoc>[];
+  session: ClientSession;
+}
+
 export interface IDeleteColumn {
   boardId?: string;
   columnId: Types.ObjectId | string;
@@ -69,6 +80,12 @@ export interface IColumnMethods {}
 
 // For statics
 export interface ColumnModel extends Model<IColumn, {}, IColumnMethods> {
+  findByIdAndUpdatePosition({
+    columnId,
+    position,
+    session,
+  }: IFindByColumnAndUpdatePosition): Promise<NonNullable<IColumnDoc>>;
+
   createNewColumn({
     boardId,
     typeId,
@@ -82,5 +99,8 @@ export interface ColumnModel extends Model<IColumn, {}, IColumnMethods> {
     userId,
     session,
   }: ICreateNewColumns): Promise<ICreateNewColumnsResult>;
+
+  updateAllColumns({ columns, session }: IUpdateAllColumns): Promise<NonNullable<IColumnDoc>[]>;
+
   deleteColumn({ boardId, columnId, session }: IDeleteColumn): Promise<null>;
 }

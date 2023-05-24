@@ -42,8 +42,6 @@ var tasksColumnsSchema = new Schema<ITasksColumns, TasksColumnsModel, ITasksColu
   {
     collection: COLLECTION_NAME,
     timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
   }
 );
 

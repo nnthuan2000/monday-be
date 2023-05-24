@@ -24,12 +24,12 @@ export interface IUpdateColumnParams {
 }
 
 export interface IUpdateAllColumnsParams {
-  columns: IColumnDoc[];
-  session: ClientSession | null;
+  columns: NonNullable<IColumnDoc>[];
+  session?: ClientSession | null;
 }
 
 export interface IDeleteColumnParams {
-  columns: IColumnDoc[];
+  columns: NonNullable<IColumnDoc>[];
   boardId: string;
   columnId: string;
 }

@@ -35,7 +35,7 @@ export default class ColumnService {
             column._id,
             {
               $set: {
-                position: index + 1,
+                position: index,
               },
             },
             { session }
@@ -45,7 +45,7 @@ export default class ColumnService {
           const createdNewColumnInfo = await Column.createNewColumn({
             boardId,
             typeId: column.belongType,
-            position: index + 1,
+            position: index,
             userId,
             session,
           });
@@ -72,19 +72,10 @@ export default class ColumnService {
   static async updateAllColumns({ columns, session = null }: IUpdateAllColumnsParams) {
     if (!session) {
       return await performTransaction(async (session) => {
-        const updatingColumnPromises = columns.map((column, index) =>
-          Column.findByIdAndUpdate(
-            column?._id,
-            {
-              $set: {
-                position: index + 1,
-              },
-            },
-            { session }
-          )
-        );
-
-        return await Promise.all(updatingColumnPromises);
+        return await Column.updateAllColumns({
+          columns,
+          session,
+        });
       });
     } else {
       const updatingColumnPromises = columns.map((column, index) =>

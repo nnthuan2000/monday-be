@@ -6,6 +6,7 @@ import {
   ITask,
   ITaskDoc,
   ITaskMethods,
+  IUpdateAllPositionsInValue,
   TaskModel,
 } from '../07-task/interfaces/task';
 import db from '../root/db';
@@ -75,6 +76,33 @@ taskSchema.static(
         select: '_id value color',
       },
     });
+  }
+);
+
+taskSchema.static(
+  'updateAllPositionsInValue',
+  async function updateAllColumn({
+    changedPositions,
+    desiredPositions,
+    taskId,
+    session,
+  }: IUpdateAllPositionsInValue) {
+    const foundTask = await this.findById(taskId);
+    if (!foundTask) throw new BadRequestError('Task is not found');
+    const values = foundTask.values;
+    const changedPositionValues = changedPositions.map((position) => values[position]);
+    desiredPositions.forEach((position, index) => {
+      values[position] = changedPositionValues[index];
+    });
+
+    await foundTask.updateOne(
+      {
+        $set: {
+          values: values,
+        },
+      },
+      { session }
+    );
   }
 );
 

@@ -3,12 +3,15 @@ import { Schema, Types } from 'mongoose';
 import {
   ColumnModel,
   IColumn,
+  IColumnDoc,
   IColumnMethods,
   ICreateNewColumn,
   ICreateNewColumnResult,
   ICreateNewColumns,
   ICreateNewColumnsResult,
   IDeleteColumn,
+  IFindByColumnAndUpdatePosition,
+  IUpdateAllColumns,
 } from '../05-column/interfaces/column';
 import db from '../root/db';
 import Type from './type';
@@ -18,6 +21,7 @@ import { BadRequestError } from '../root/responseHandler/error.response';
 import TasksColumns from './tasksColumns';
 import DefaultValue from './defaultValue';
 import { IDefaultValueDoc } from '../08-value/interfaces/defaultValue';
+import Task from './task';
 
 const DOCUMENT_NAME = 'Column';
 const COLLECTION_NAME = 'Columns';
@@ -51,6 +55,28 @@ var columnSchema = new Schema<IColumn, ColumnModel, IColumnMethods>(
   {
     collection: COLLECTION_NAME,
     timestamps: true,
+  }
+);
+
+columnSchema.static(
+  'findByIdAndUpdatePosition',
+  async function findByIdAndUpdatePosition({
+    columnId,
+    position,
+    session,
+  }: IFindByColumnAndUpdatePosition): Promise<NonNullable<IColumnDoc>> {
+    const updatedColumn = await this.findByIdAndUpdate(
+      columnId,
+      {
+        $set: {
+          position: position,
+        },
+      },
+      { new: true, session }
+    );
+    if (!updatedColumn) throw new BadRequestError('Column is not found');
+
+    return updatedColumn;
   }
 );
 
@@ -164,6 +190,48 @@ columnSchema.static(
       createdNewColumns: gotDefaultValuesFromColumns,
       selectedDefaultValues: selectedDefaultValue,
     };
+  }
+);
+
+columnSchema.static(
+  'updateAllColumns',
+  async function updateAllColumns({
+    columns,
+    session,
+  }: IUpdateAllColumns): Promise<NonNullable<IColumnDoc>[]> {
+    const changedPositions: number[] = [];
+    const desiredPositions: number[] = [];
+    const updatingAllColumnPromises = columns.map((column, index) => {
+      if (index !== column.position) {
+        changedPositions.push(column.position);
+        desiredPositions.push(index);
+      }
+
+      return this.findByIdAndUpdatePosition({ columnId: column._id, position: index, session });
+    });
+
+    if (changedPositions.length === 0) throw new BadRequestError(`Position of columns is the same`);
+    const updatedAllColumns = await Promise.all(updatingAllColumnPromises);
+
+    const foundAllTasksColumns = await TasksColumns.find(
+      {
+        belongColumn: { $in: updatedAllColumns[0]!._id },
+      },
+      {},
+      { session }
+    );
+
+    const updatingValuesInTaskPromises = foundAllTasksColumns.map((tasksColumns) =>
+      Task.updateAllPositionsInValue({
+        changedPositions,
+        desiredPositions,
+        taskId: tasksColumns.belongTask,
+        session,
+      })
+    );
+
+    await Promise.all(updatingValuesInTaskPromises);
+    return updatedAllColumns;
   }
 );
 

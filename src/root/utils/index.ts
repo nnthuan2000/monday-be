@@ -149,3 +149,12 @@ export const createSetOfTasksColumnsByColumn = async ({
   );
   return createdNewTasksColumns._id;
 };
+
+interface ISwapTwoItemsInArray {
+  positions: number[];
+  arr: string[];
+}
+
+export const swapTwoItemsInArray = ({ positions, arr }: ISwapTwoItemsInArray) => {
+  [arr[positions[0]], arr[positions[1]]] = [arr[positions[1]], arr[positions[0]]];
+};
