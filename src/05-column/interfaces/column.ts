@@ -10,6 +10,13 @@ export interface IColumn {
   defaultValues: Types.ObjectId[];
 }
 
+export interface IColumnWithId {
+  _id?: string;
+  name: string;
+  position: number;
+  belongType: string;
+}
+
 /////////////////////////////////////
 /////////////////////////////////////
 /////////////////////////////////////
@@ -26,6 +33,11 @@ export interface ICreateNewColumns {
   boardId: string | Types.ObjectId;
   userId: Types.ObjectId;
   session: ClientSession;
+}
+
+export interface ICreateNewColumnsResult {
+  createdNewColumns: NonNullable<IColumnDoc>[];
+  selectedDefaultValues: IDefaultValueDoc[];
 }
 
 export interface ICreateNewColumnResult {
@@ -49,6 +61,10 @@ export type IColumnDocWithType = NonNullable<IColumnDoc> & {
   belongType: ITypeDoc;
 };
 
+export type IColumnWithDefaultValues = NonNullable<IColumnDoc> & {
+  defaultValues: IDefaultValueDoc[];
+};
+
 export interface IColumnMethods {}
 
 // For statics
@@ -65,6 +81,6 @@ export interface ColumnModel extends Model<IColumn, {}, IColumnMethods> {
     boardId,
     userId,
     session,
-  }: ICreateNewColumns): Promise<NonNullable<IColumnDoc>[]>;
+  }: ICreateNewColumns): Promise<ICreateNewColumnsResult>;
   deleteColumn({ boardId, columnId, session }: IDeleteColumn): Promise<null>;
 }

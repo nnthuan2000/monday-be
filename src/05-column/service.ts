@@ -1,7 +1,10 @@
+import { Types } from 'mongoose';
+import { IDefaultValueDoc } from '../08-value/interfaces/defaultValue';
 import Column from '../models/column';
 import Type from '../models/type';
 import { BadRequestError } from '../root/responseHandler/error.response';
 import { performTransaction } from '../root/utils/performTransaction';
+import { IColumnDoc } from './interfaces/column';
 import { ICreateColumnResult } from './interfaces/controller';
 import {
   ICreateColumnParams,
@@ -19,31 +22,40 @@ export default class ColumnService {
   static async createColumn({
     boardId,
     userId,
-    columnIds,
-    neededData,
+    columns,
   }: ICreateColumnParams): Promise<ICreateColumnResult> {
-    const { position, typeId } = neededData;
-
-    if (!typeId || !position)
-      throw new BadRequestError('Missing some fields to create a new column');
-
     return await performTransaction<ICreateColumnResult>(async (session) => {
-      const creatingNewColumnInfoPromise = Column.createNewColumn({
-        boardId,
-        typeId,
-        position: position,
-        userId,
-        session,
-      });
-
-      const updaingAllColumnPromise = this.updateAllColumns({ columnIds });
-
-      const [createdNewColumnInfo, _] = await Promise.all([
-        creatingNewColumnInfoPromise,
-        updaingAllColumnPromise,
-      ]);
-
-      return { ...createdNewColumnInfo };
+      let createdNewColumn: IColumnDoc = null;
+      let defaultValues: IDefaultValueDoc[] = [];
+      let tasksColumnsIds: Types.ObjectId[] = [];
+      const workingColumnPromises: Promise<IColumnDoc>[] = [];
+      for (const [index, column] of columns.entries()) {
+        if (column._id) {
+          const updatedColumn = Column.findByIdAndUpdate(
+            column._id,
+            {
+              $set: {
+                position: index + 1,
+              },
+            },
+            { session }
+          );
+          workingColumnPromises.push(updatedColumn);
+        } else {
+          const createdNewColumnInfo = await Column.createNewColumn({
+            boardId,
+            typeId: column.belongType,
+            position: index + 1,
+            userId,
+            session,
+          });
+          createdNewColumn = createdNewColumnInfo.createdNewColumn;
+          defaultValues = createdNewColumnInfo.defaultValues;
+          tasksColumnsIds = createdNewColumnInfo.tasksColumnsIds;
+        }
+      }
+      await Promise.all(workingColumnPromises);
+      return { createdNewColumn, defaultValues, tasksColumnsIds };
     });
   }
 
@@ -57,31 +69,48 @@ export default class ColumnService {
     return updatedColumn;
   }
 
-  static async updateAllColumns({ columnIds }: IUpdateAllColumnsParams) {
-    return await performTransaction(async (session) => {
-      const updatingAllColumnsPromises = columnIds.map((columnId, index) =>
-        this.updateColumn({
-          columnId,
-          updationData: {
-            position: index + 1,
+  static async updateAllColumns({ columns, session = null }: IUpdateAllColumnsParams) {
+    if (!session) {
+      return await performTransaction(async (session) => {
+        const updatingColumnPromises = columns.map((column, index) =>
+          Column.findByIdAndUpdate(
+            column?._id,
+            {
+              $set: {
+                position: index + 1,
+              },
+            },
+            { session }
+          )
+        );
+
+        return await Promise.all(updatingColumnPromises);
+      });
+    } else {
+      const updatingColumnPromises = columns.map((column, index) =>
+        Column.findByIdAndUpdate(
+          column?._id,
+          {
+            $set: {
+              position: index + 1,
+            },
           },
-          session,
-        })
+          { session }
+        )
       );
 
-      const updatedAllColumns = await Promise.all(updatingAllColumnsPromises);
-      return updatedAllColumns;
-    });
+      return await Promise.all(updatingColumnPromises);
+    }
   }
 
-  static async deleteColumn({ boardId, columnId, columnIds }: IDeleteColumnParams) {
+  static async deleteColumn({ boardId, columns, columnId }: IDeleteColumnParams) {
     return await performTransaction(async (session) => {
       await Column.deleteColumn({
         boardId,
         columnId,
         session,
       });
-      await this.updateAllColumns({ columnIds });
+      await this.updateAllColumns({ columns, session });
     });
   }
 }

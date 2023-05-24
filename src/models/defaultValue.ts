@@ -5,9 +5,7 @@ import {
   ICreateNewDefaultValuesByColumn,
   IDefaultValue,
   IDefaultValueMethods,
-  IInitDefaultValues,
 } from '../08-value/interfaces/defaultValue';
-import Type from './type';
 import defaultValues from '../08-value/constant';
 
 const DOCUMENT_NAME = 'DefaultValue';
@@ -51,17 +49,6 @@ var defaultValueSchema = new Schema<IDefaultValue, DefaultValueModel, IDefaultVa
 );
 
 defaultValueSchema.static(
-  'initDefaultValues',
-  async function initDefaultValues({ type }: IInitDefaultValues) {
-    const createdType = await Type.create({ name: type });
-    await this.create({
-      belongType: createdType._id,
-      canEditColor: false,
-    });
-  }
-);
-
-defaultValueSchema.static(
   'createNewDefaultValuesByColumn',
   async function createNewDefaultValuesByColumn({
     boardId,
@@ -76,24 +63,13 @@ defaultValueSchema.static(
         belongType: typeDoc._id,
         belongBoard: boardId,
         createdBy,
-        canEditColor: true,
       }));
 
       const insertedDefaultValues = await DefaultValue.insertMany(convertedToDefaultValues, {
         session,
       });
 
-      const foundDefaultValue = await DefaultValue.findOne(
-        {
-          belongType: typeDoc._id,
-        },
-        {},
-        { session }
-      );
-
-      const values = [...insertedDefaultValues, foundDefaultValue!];
-
-      return values;
+      return insertedDefaultValues;
     }
     return [];
   }

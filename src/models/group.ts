@@ -1,6 +1,7 @@
 import { Schema } from 'mongoose';
 import {
   GroupModel,
+  ICreateNewGroup,
   ICreateNewGroups,
   IDeleteGroup,
   IGroup,
@@ -43,41 +44,49 @@ var groupSchema = new Schema<IGroup, GroupModel, IGroupMethods>(
 );
 
 groupSchema.static(
-  'createNewGroups',
-  async function createNewGroups({ boardId, data, columns, session }: ICreateNewGroups) {
-    let createdNewGroups: NonNullable<IGroupDoc>[];
-    if (!columns) {
-      createdNewGroups = await this.create([{ ...data }], { session });
-      await Board.findByIdAndUpdate(
-        boardId,
-        {
-          $push: {
-            groups: createdNewGroups[0]._id,
-          },
+  'createNewGroup',
+  async function createNewGroup({
+    boardId,
+    data,
+    session,
+  }: ICreateNewGroup): Promise<NonNullable<IGroupDoc>> {
+    const [createdNewGroup] = await this.create([{ ...data }], { session });
+    await Board.findByIdAndUpdate(
+      boardId,
+      {
+        $push: {
+          groups: createdNewGroup._id,
         },
-        { session }
-      );
-      return createdNewGroups;
-    }
+      },
+      { session }
+    );
+    return createdNewGroup;
+  }
+);
 
+groupSchema.static(
+  'createNewGroups',
+  async function createNewGroups({ columns, selectedDefaultValues, session }: ICreateNewGroups) {
     //Create two new tasks and new values of these task with columns
     let groupObjs: IGroup[] = [];
     const tasksPerGroup = 2;
-    const createdNewTasks = await Task.createNewTasks({ columns, session });
+    const createdNewTasks = await Task.createNewTasks({ columns, selectedDefaultValues, session });
 
     for (let i = 0; i < createdNewTasks.length; i += tasksPerGroup) {
       const tasksSlice = createdNewTasks.slice(i, i + tasksPerGroup);
 
       const group: IGroup = {
         name: `New Group`,
-        position: i / tasksPerGroup + 1,
+        position: i / tasksPerGroup,
         tasks: tasksSlice.map((task) => task._id),
       };
 
       groupObjs.push(group);
     }
 
-    createdNewGroups = await this.insertMany(groupObjs, { session });
+    const createdNewGroups = (await this.insertMany(groupObjs, {
+      session,
+    })) as NonNullable<IGroupDoc>[];
 
     const groupPromises = createdNewGroups.map((group) =>
       group.populate({

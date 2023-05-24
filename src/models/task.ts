@@ -1,5 +1,6 @@
 import { Schema } from 'mongoose';
 import {
+  ICreateNewTask,
   ICreateNewTasks,
   IDeleteTask,
   ITask,
@@ -10,8 +11,7 @@ import {
 import db from '../root/db';
 import Group from './group';
 import { BadRequestError } from '../root/responseHandler/error.response';
-import DefaultValue from './defaultValue';
-import { createSetOfTasksColumnsByTask } from '../root/utils';
+import { createSetOfTasksColumnsByTask, createSetOfTasksColumnsByTask1 } from '../root/utils';
 import TasksColumns from './tasksColumns';
 
 const DOCUMENT_NAME = 'Task';
@@ -48,65 +48,62 @@ var taskSchema = new Schema<ITask, TaskModel, ITaskMethods>(
 );
 
 taskSchema.static(
+  'createNewTask',
+  async function createNewTask({ groupId, data, columns, session }: ICreateNewTask) {
+    const [createdNewTask] = await this.create([{ ...data }], { session });
+
+    const updatedTask = await createSetOfTasksColumnsByTask({
+      columns: columns,
+      taskDoc: createdNewTask,
+      session,
+    });
+
+    await Group.findByIdAndUpdate(
+      groupId,
+      {
+        $push: {
+          tasks: updatedTask!._id,
+        },
+      },
+      { session }
+    );
+    return await updatedTask!.populate({
+      path: 'values',
+      select: '_id value valueId belongColumn typeOfValue',
+      populate: {
+        path: 'valueId',
+        select: '_id value color',
+      },
+    });
+  }
+);
+
+taskSchema.static(
   'createNewTasks',
-  async function createNewTasks({ groupId, data, columns, session }: ICreateNewTasks) {
+  async function createNewTasks({ columns, selectedDefaultValues, session }: ICreateNewTasks) {
     // Get all values default of these columns
-    const findingDefaulValuePromises = columns.map((column) =>
-      DefaultValue.findOne({ belongType: column.belongType }, {}, { session }).select(
-        '_id value color'
-      )
+
+    const taskObjs: ITask[] = [
+      { name: 'Task 1', position: 0, values: [] },
+      { name: 'Task 2', position: 1, values: [] },
+      { name: 'Task 1', position: 0, values: [] },
+      { name: 'Task 2', position: 1, values: [] },
+    ];
+
+    const createdInsertTasks = (await this.insertMany(taskObjs, {
+      session,
+    })) as NonNullable<ITaskDoc>[];
+    const updatingCreatedTasks = createdInsertTasks.map((task) =>
+      createSetOfTasksColumnsByTask1({
+        selectedDefaultValues,
+        columns,
+        taskDoc: task,
+        session,
+      })
     );
 
-    const foundDefaultValues = await Promise.all(findingDefaulValuePromises);
+    const createdNewTasks = await Promise.all(updatingCreatedTasks);
 
-    let createdNewTasks: ITaskDoc[];
-    if (groupId && data) {
-      const createdNewTask = await this.create([{ ...data }], { session });
-
-      const updatedTask = await createSetOfTasksColumnsByTask({
-        defaultValues: foundDefaultValues,
-        columns,
-        taskDoc: createdNewTask[0],
-        session,
-      });
-
-      await Group.findByIdAndUpdate(
-        groupId,
-        {
-          $push: {
-            tasks: updatedTask!._id,
-          },
-        },
-        { session }
-      );
-      return await updatedTask!.populate({
-        path: 'values',
-        select: '_id value valueId belongColumn typeOfValue',
-        populate: {
-          path: 'valueId',
-          select: '_id value color',
-        },
-      });
-    } else {
-      const taskObjs: ITask[] = [
-        { name: 'Task 1', position: 1, values: [] },
-        { name: 'Task 2', position: 2, values: [] },
-        { name: 'Task 1', position: 1, values: [] },
-        { name: 'Task 2', position: 2, values: [] },
-      ];
-
-      const createdInsertTasks = await this.insertMany(taskObjs, { session });
-      const updatingCreatedTasks = createdInsertTasks.map((task) =>
-        createSetOfTasksColumnsByTask({
-          defaultValues: foundDefaultValues,
-          columns,
-          taskDoc: task,
-          session,
-        })
-      );
-
-      createdNewTasks = await Promise.all(updatingCreatedTasks);
-    }
     return createdNewTasks;
   }
 );

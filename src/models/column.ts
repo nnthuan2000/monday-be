@@ -3,11 +3,11 @@ import { Schema, Types } from 'mongoose';
 import {
   ColumnModel,
   IColumn,
-  IColumnDoc,
   IColumnMethods,
   ICreateNewColumn,
   ICreateNewColumnResult,
   ICreateNewColumns,
+  ICreateNewColumnsResult,
   IDeleteColumn,
 } from '../05-column/interfaces/column';
 import db from '../root/db';
@@ -17,6 +17,7 @@ import Board from './board';
 import { BadRequestError } from '../root/responseHandler/error.response';
 import TasksColumns from './tasksColumns';
 import DefaultValue from './defaultValue';
+import { IDefaultValueDoc } from '../08-value/interfaces/defaultValue';
 
 const DOCUMENT_NAME = 'Column';
 const COLLECTION_NAME = 'Columns';
@@ -96,6 +97,7 @@ columnSchema.static(
       boardDoc: updatedBoard,
       columnDoc: createdNewColumn,
       defaultValues: createdNewDefaultValues,
+      position,
       session,
     });
 
@@ -113,12 +115,13 @@ columnSchema.static(
     boardId,
     userId,
     session,
-  }: ICreateNewColumns): Promise<NonNullable<IColumnDoc>[]> {
+  }: ICreateNewColumns): Promise<ICreateNewColumnsResult> {
     const findingStatusType = Type.findOne({ name: MultipleValueTypes.STATUS });
     const findingDateType = Type.findOne({ name: SingleValueTypes.DATE });
     const foundTypes = await Promise.all([findingStatusType, findingDateType]);
 
     const newColumnObjs: IColumn[] = [];
+    const selectedDefaultValue: IDefaultValueDoc[] = [];
     for (const [index, type] of foundTypes.entries()) {
       const createdNewDefaultValues = await DefaultValue.createNewDefaultValuesByColumn({
         boardId: new Types.ObjectId(boardId),
@@ -126,10 +129,15 @@ columnSchema.static(
         createdBy: userId,
         session,
       });
+      if (createdNewDefaultValues.length === 0) {
+        selectedDefaultValue.push(null);
+      } else {
+        selectedDefaultValue.push(createdNewDefaultValues.at(-1)!);
+      }
 
       newColumnObjs.push({
         name: type!.name,
-        position: index + 1,
+        position: index,
         belongType: type!._id,
         defaultValues: createdNewDefaultValues.map((value) => value._id),
       });
@@ -150,7 +158,12 @@ columnSchema.static(
       ])
     );
 
-    return await Promise.all(gettingDefaultValuesFromColPromises);
+    const gotDefaultValuesFromColumns = await Promise.all(gettingDefaultValuesFromColPromises);
+
+    return {
+      createdNewColumns: gotDefaultValuesFromColumns,
+      selectedDefaultValues: selectedDefaultValue,
+    };
   }
 );
 

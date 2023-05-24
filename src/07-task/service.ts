@@ -1,4 +1,3 @@
-import { IColumnDoc } from '../05-column/interfaces/column';
 import Board from '../models/board';
 import Task from '../models/task';
 import { BadRequestError } from '../root/responseHandler/error.response';
@@ -10,6 +9,7 @@ import {
   IUpdateTaskParams,
 } from './interfaces/services';
 import { ITaskDoc } from './interfaces/task';
+import { IColumnWithDefaultValues } from '../05-column/interfaces/column';
 
 export default class TaskService {
   static async getTask({ taskId }: IGetTaskParams) {
@@ -24,22 +24,27 @@ export default class TaskService {
     data,
   }: ICreateTaskParams): Promise<NonNullable<ITaskDoc>> {
     return await performTransaction(async (session) => {
-      const foundBoard = await Board.findById(boardId)
-        .populate({
-          path: 'columns',
-          select: '_id name belongType position',
-          options: {
-            sort: { position: 1 },
+      const foundBoard = await Board.findById(boardId).populate({
+        path: 'columns',
+        select: '_id name defaultValues',
+        populate: {
+          path: 'defaultValues',
+          select: '_id value color canEditColor',
+          match: {
+            canEditColor: false,
           },
-        })
-        .lean();
+          transform: (doc, id) => (doc === null ? null : doc),
+        },
+      });
+
+      console.log({ foundBoard });
 
       if (!foundBoard) throw new BadRequestError('Board is not found');
 
-      const createdNewTask = await Task.createNewTasks({
+      const createdNewTask = await Task.createNewTask({
         groupId,
         data,
-        columns: foundBoard.columns as NonNullable<IColumnDoc>[],
+        columns: foundBoard.columns as IColumnWithDefaultValues[],
         session,
       });
 

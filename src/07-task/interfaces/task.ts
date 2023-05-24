@@ -1,6 +1,7 @@
 import { ClientSession, Model, Types } from 'mongoose';
 import { Doc, DocObj } from '../../root/app.interfaces';
-import { IColumnDoc } from '../../05-column/interfaces/column';
+import { IColumnDoc, IColumnWithDefaultValues } from '../../05-column/interfaces/column';
+import { IDefaultValueDoc } from '../../08-value/interfaces/defaultValue';
 
 export interface ITask {
   name: string;
@@ -13,10 +14,16 @@ export interface ITask {
 /////////////////////////////////////
 /////////////////////////////////////
 
+export interface ICreateNewTask {
+  groupId: string;
+  data: ITask;
+  columns: IColumnWithDefaultValues[];
+  session: ClientSession;
+}
+
 export interface ICreateNewTasks {
-  groupId?: string;
-  data?: ITask;
   columns: NonNullable<IColumnDoc>[];
+  selectedDefaultValues: IDefaultValueDoc[];
   session: ClientSession;
 }
 
@@ -36,10 +43,15 @@ export interface ITaskMethods {}
 // For statics
 
 export interface TaskModel extends Model<ITask, {}, ITaskMethods> {
-  createNewTasks({
+  createNewTask({
     groupId,
     data,
     columns,
+    session,
+  }: ICreateNewTask): Promise<NonNullable<ITaskDoc>>;
+  createNewTasks({
+    columns,
+    selectedDefaultValues,
     session,
   }: ICreateNewTasks): Promise<NonNullable<ITaskDoc>[]>;
   deleteTask({ groupId, taskId, session }: IDeleteTask): Promise<null>;

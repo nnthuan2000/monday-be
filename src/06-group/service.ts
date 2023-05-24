@@ -6,8 +6,7 @@ import Group from '../models/group';
 export default class GroupService {
   static async createGroup({ boardId, data }: ICreateGroupParams) {
     return await performTransaction(async (session) => {
-      const [createdNewGroup] = await Group.createNewGroups({ boardId, data, session });
-      return createdNewGroup;
+      return await Group.createNewGroup({ boardId, data, session });
     });
   }
 

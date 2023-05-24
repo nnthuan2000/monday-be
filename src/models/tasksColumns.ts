@@ -9,7 +9,6 @@ import {
 } from '../08-value/interfaces/tasksColumns';
 import { ITaskDoc } from '../07-task/interfaces/task';
 import { createSetOfTasksColumnsByColumn } from '../root/utils';
-import { performTransaction } from '../root/utils/performTransaction';
 import Task from './task';
 
 const DOCUMENT_NAME = 'TasksColumns';
@@ -54,11 +53,16 @@ tasksColumnsSchema.static(
     boardDoc,
     columnDoc,
     defaultValues,
+    position,
+    session,
   }: ICreateTasksColumnsByColumn) {
     const boardWithGroups = await boardDoc.populate({
       path: 'groups',
       populate: {
         path: 'tasks',
+        options: {
+          sort: { position: 1 },
+        },
       },
     });
 
@@ -70,20 +74,19 @@ tasksColumnsSchema.static(
       []
     );
 
-    return await performTransaction(async (session) => {
-      const updatingTaskPromises = tasks.map((task) =>
-        createSetOfTasksColumnsByColumn({
-          columnId: columnDoc._id,
-          defaultValue: defaultValues.at(-1)!,
-          taskDoc: task,
-          typeOfValue: defaultValues.length !== 0 ? 'multiple' : 'single',
-          session,
-        })
-      );
+    const updatingTaskPromises = tasks.map((task) =>
+      createSetOfTasksColumnsByColumn({
+        columnId: columnDoc._id,
+        defaultValue: defaultValues.at(-1)!,
+        taskDoc: task,
+        position,
+        typeOfValue: defaultValues.length !== 0 ? 'multiple' : 'single',
+        session,
+      })
+    );
 
-      const tasksColumns = await Promise.all(updatingTaskPromises);
-      return tasksColumns;
-    });
+    const tasksColumns = await Promise.all(updatingTaskPromises);
+    return tasksColumns;
   }
 );
 

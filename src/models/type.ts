@@ -2,7 +2,6 @@ import { Schema, model } from 'mongoose';
 import { IType, ITypeMethods, TypeModel } from '../05-column/interfaces/type';
 import { MultipleValueTypes, SingleValueTypes } from '../05-column/constant';
 import db from '../root/db';
-import DefaultValue from './defaultValue';
 
 const DOCUMENT_NAME = 'Type';
 const COLLECTION_NAME = 'Types';
@@ -27,7 +26,7 @@ var typeSchema = new Schema<IType, TypeModel, ITypeMethods>(
 
 typeSchema.static('createTypes', async function createTypes() {
   const creatingMultipleValueTypes = Object.values(MultipleValueTypes).map((type) =>
-    DefaultValue.initDefaultValues({ type })
+    this.create({ name: type })
   );
   const creatingSingleValueTypes = Object.values(SingleValueTypes).map((type) =>
     this.create({ name: type })

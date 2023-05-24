@@ -1,10 +1,10 @@
 import lodash from 'lodash';
 import { IDefaultValueDoc } from '../../08-value/interfaces/defaultValue';
 import TasksColumns from '../../models/tasksColumns';
-import { IColumnDoc } from '../../05-column/interfaces/column';
 import { ClientSession, Types } from 'mongoose';
 import { ITaskDoc } from '../../07-task/interfaces/task';
 import Task from '../../models/task';
+import { IColumnDoc } from '../../05-column/interfaces/column';
 
 interface IGetInfoParams<T> {
   fields: string[];
@@ -28,7 +28,6 @@ export const getSelectData = (select: string[]) => {
 };
 
 interface ICreateSetOfTasksColumnsByTask {
-  defaultValues: IDefaultValueDoc[];
   columns: NonNullable<IColumnDoc>[];
   taskDoc: NonNullable<ITaskDoc>;
   session: ClientSession;
@@ -36,20 +35,60 @@ interface ICreateSetOfTasksColumnsByTask {
 
 export const createSetOfTasksColumnsByTask = async ({
   columns,
-  defaultValues,
   session,
   taskDoc,
 }: ICreateSetOfTasksColumnsByTask) => {
   let result: ITaskDoc = null;
-  for (const [i, value] of defaultValues.entries()) {
+  for (const column of columns) {
     const createdNewTasksColumns = await TasksColumns.create(
       [
         {
-          value: value ? null : value,
-          valueId: value ? value._id : null,
-          belongColumn: columns[i],
+          value: null,
+          valueId: column.defaultValues || null,
+          belongColumn: column._id,
           belongTask: taskDoc._id,
-          typeOfValue: value ? 'multiple' : 'single',
+          typeOfValue: column.defaultValues ? 'multiple' : 'single',
+        },
+      ],
+      { session }
+    );
+    result = await Task.findByIdAndUpdate(
+      taskDoc._id,
+      {
+        $push: {
+          values: createdNewTasksColumns[0]._id,
+        },
+        new: true,
+      },
+      { session }
+    );
+  }
+  return result;
+};
+
+interface ICreateSetOfTasksColumnsByTask1 {
+  selectedDefaultValues: IDefaultValueDoc[];
+  columns: NonNullable<IColumnDoc>[];
+  taskDoc: NonNullable<ITaskDoc>;
+  session: ClientSession;
+}
+
+export const createSetOfTasksColumnsByTask1 = async ({
+  selectedDefaultValues,
+  columns,
+  session,
+  taskDoc,
+}: ICreateSetOfTasksColumnsByTask1) => {
+  let result: ITaskDoc = null;
+  for (const [i, column] of columns.entries()) {
+    const createdNewTasksColumns = await TasksColumns.create(
+      [
+        {
+          value: null,
+          valueId: selectedDefaultValues[i]?._id || null,
+          belongColumn: column._id,
+          belongTask: taskDoc._id,
+          typeOfValue: selectedDefaultValues[i] ? 'multiple' : 'single',
         },
       ],
       { session }
@@ -72,6 +111,7 @@ interface ICreateSetOfTasksColumnsByColumn {
   taskDoc: NonNullable<ITaskDoc>;
   columnId: Types.ObjectId;
   typeOfValue: string;
+  position: number;
   defaultValue: NonNullable<IDefaultValueDoc> | null;
   session: ClientSession;
 }
@@ -80,6 +120,7 @@ export const createSetOfTasksColumnsByColumn = async ({
   columnId,
   defaultValue,
   taskDoc,
+  position,
   typeOfValue,
   session,
 }: ICreateSetOfTasksColumnsByColumn) => {
@@ -98,7 +139,10 @@ export const createSetOfTasksColumnsByColumn = async ({
   await taskDoc.updateOne(
     {
       $push: {
-        values: createdNewTasksColumns._id,
+        values: {
+          $each: [createdNewTasksColumns._id],
+          $position: position,
+        },
       },
     },
     { session }
