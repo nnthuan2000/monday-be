@@ -1,3 +1,4 @@
+import Group from '../models/group';
 import Task from '../models/task';
 import { BadRequestError } from '../root/responseHandler/error.response';
 import { performTransaction } from '../root/utils/performTransaction';
@@ -19,7 +20,7 @@ export default class TaskService {
 
   static async createTask({ boardId, groupId, tasks }: ICreateTaskParams) {
     return await performTransaction(async (session) => {
-      let createdNewTask: ITaskDoc = null;
+      let creatingNewTaskPromise: Promise<ITaskDoc> | null = null;
       const updatingPositionTasks: Promise<NonNullable<ITaskDoc>>[] = [];
       for (const [index, task] of tasks.entries()) {
         if (task._id) {
@@ -31,19 +32,20 @@ export default class TaskService {
 
           updatingPositionTasks.push(updatingTask);
         } else {
-          createdNewTask = await Task.createNewTask({
+          creatingNewTaskPromise = Task.createNewTask({
             boardId,
             groupId,
-            data: { ...task },
+            data: { ...task, position: index },
             session,
           });
         }
       }
 
-      await Promise.all(updatingPositionTasks);
-      if (createdNewTask) throw new BadRequestError('Missing some fields when create a new task');
+      if (!creatingNewTaskPromise)
+        throw new BadRequestError('Missing some fields when create a new task');
+      const finishedTasks = await Promise.all([...updatingPositionTasks, creatingNewTaskPromise]);
 
-      return createdNewTask;
+      return finishedTasks.at(-1);
     });
   }
 
@@ -53,15 +55,34 @@ export default class TaskService {
     return updatedTask;
   }
 
-  static async updateAllTasks({ tasks }: IUpdateAllTasksParams) {
+  static async updateAllTasks({ groupId, tasks }: IUpdateAllTasksParams) {
+    const foundGroup = await Group.findById(groupId);
+    if (!foundGroup) throw new BadRequestError('Group is not found');
+
+    if (foundGroup.tasks.length !== tasks.length)
+      throw new BadRequestError('Please send all tasks in a board to update all position of tasks');
+
+    const totalNumOfTasks = tasks.length;
+    const totalDesiredPosition = (totalNumOfTasks * (0 + totalNumOfTasks - 1)) / 2;
+    const totalPosition = tasks.reduce((currTotal, task) => currTotal + task.position, 0);
+
+    if (totalDesiredPosition !== totalPosition)
+      throw new BadRequestError('Something wrong when transmitted position of tasks');
+
     return await performTransaction(async (session) => {
       return await Task.updateAllPositionTasks({ tasks, session });
     });
   }
 
   static async deleteTask({ groupId, taskId, tasks }: IDeleteTaskParams) {
+    const foundGroup = await Group.findById(groupId);
+    if (!foundGroup) throw new BadRequestError('Group is not found');
+
+    if (foundGroup.tasks.length - 1 !== tasks.length)
+      throw new BadRequestError('Please send all the tasks when delete a task in group');
+
     return await performTransaction(async (session) => {
-      await Task.deleteTask({ groupId, taskId, session });
+      await Task.deleteTask({ groupDoc: foundGroup, taskId, session });
       await Task.updateAllPositionTasks({ tasks, session });
     });
   }

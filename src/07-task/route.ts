@@ -9,6 +9,8 @@ taskRouter
   .get(taskController.getOne as any)
   .patch(taskController.updateOne as any);
 
+taskRouter.patch('/group/:groupId/alltasks', taskController.updateAllTasks as any);
+
 taskRouter.delete('/group/:groupId/task/:id', taskController.deleteOne as any);
 
 export default taskRouter;

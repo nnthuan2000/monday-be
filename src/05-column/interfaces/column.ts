@@ -2,6 +2,7 @@ import { ClientSession, Model, Types } from 'mongoose';
 import { Doc, DocObj } from '../../root/app.interfaces';
 import { ITypeDoc } from './type';
 import { IDefaultValueDoc } from '../../08-value/interfaces/defaultValue';
+import { IBoardDoc } from '../../04-board/interfaces/board';
 
 export interface IColumn {
   name: string;
@@ -10,9 +11,22 @@ export interface IColumn {
   defaultValues: Types.ObjectId[];
 }
 
+export interface IColumnWithId {
+  _id?: string;
+  name: string;
+  position: number;
+  belongType: string;
+}
+
 /////////////////////////////////////
 /////////////////////////////////////
 /////////////////////////////////////
+
+export interface IFindByColumnAndUpdatePosition {
+  columnId: string | Types.ObjectId;
+  position: number;
+  session: ClientSession;
+}
 
 export interface ICreateNewColumn {
   boardId: string;
@@ -28,14 +42,24 @@ export interface ICreateNewColumns {
   session: ClientSession;
 }
 
+export interface ICreateNewColumnsResult {
+  createdNewColumns: NonNullable<IColumnDoc>[];
+  selectedDefaultValues: IDefaultValueDoc[];
+}
+
 export interface ICreateNewColumnResult {
   createdNewColumn: NonNullable<IColumnDoc>;
   defaultValues: NonNullable<IDefaultValueDoc>[];
   tasksColumnsIds: Types.ObjectId[];
 }
 
+export interface IUpdateAllColumns {
+  columns: NonNullable<IColumnDoc>[];
+  session: ClientSession;
+}
+
 export interface IDeleteColumn {
-  boardId?: string;
+  boardDoc: NonNullable<IBoardDoc>;
   columnId: Types.ObjectId | string;
   session: ClientSession;
 }
@@ -49,10 +73,20 @@ export type IColumnDocWithType = NonNullable<IColumnDoc> & {
   belongType: ITypeDoc;
 };
 
+export type IColumnWithDefaultValues = NonNullable<IColumnDoc> & {
+  defaultValues: IDefaultValueDoc[];
+};
+
 export interface IColumnMethods {}
 
 // For statics
 export interface ColumnModel extends Model<IColumn, {}, IColumnMethods> {
+  findByIdAndUpdatePosition({
+    columnId,
+    position,
+    session,
+  }: IFindByColumnAndUpdatePosition): Promise<NonNullable<IColumnDoc>>;
+
   createNewColumn({
     boardId,
     typeId,
@@ -65,6 +99,11 @@ export interface ColumnModel extends Model<IColumn, {}, IColumnMethods> {
     boardId,
     userId,
     session,
-  }: ICreateNewColumns): Promise<NonNullable<IColumnDoc>[]>;
-  deleteColumn({ boardId, columnId, session }: IDeleteColumn): Promise<null>;
+  }: ICreateNewColumns): Promise<ICreateNewColumnsResult>;
+
+  updateAllColumnsForDelete({ columns, session }: IUpdateAllColumns): Promise<void>;
+
+  updateAllColumns({ columns, session }: IUpdateAllColumns): Promise<NonNullable<IColumnDoc>[]>;
+
+  deleteColumn({ boardDoc, columnId, session }: IDeleteColumn): Promise<null>;
 }

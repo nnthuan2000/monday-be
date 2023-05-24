@@ -25,5 +25,6 @@ export interface ISetValueParams {
 }
 
 export interface IDeleteValueByTypeParams {
+  columnId: string;
   defaultValueId: string;
 }

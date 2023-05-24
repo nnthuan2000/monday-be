@@ -15,7 +15,9 @@ export interface ISignUpParams extends ISignInParams {
   name: string;
 }
 
-export interface ISendCodeAgain extends ISignInParams {}
+export interface ISendCodeAgain {
+  email: string;
+}
 
 export interface IGetMeParams {
   id: Types.ObjectId;

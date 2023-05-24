@@ -54,9 +54,7 @@ workspaceSchema.static(
   async function deleteWorkspace({ workspaceId, session }: IDeleteWorkspace) {
     const deletedWorkspace = await this.findByIdAndDelete(workspaceId, { session });
     if (!deletedWorkspace || deletedWorkspace.isMain)
-      throw new BadRequestError(
-        'Workspace is not found or this workspace is belong main workspace'
-      );
+      throw new BadRequestError('Workspace is not found or this workspace is main workspace');
 
     // Delete all boards
     const boardIds = deletedWorkspace.boards;

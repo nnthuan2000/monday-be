@@ -13,6 +13,7 @@ export interface IUpdateGroupParams {
 }
 
 export interface IUpdateAllGroupsParams {
+  boardId: string;
   groups: NonNullable<IGroupDoc>[];
 }
 

@@ -8,13 +8,13 @@ import {
   ITaskDoc,
   ITaskMethods,
   IUpdateAllPositionTasks,
+  IUpdateAllPositionsInValue,
   TaskModel,
 } from '../07-task/interfaces/task';
 import db from '../root/db';
 import Group from './group';
 import { BadRequestError } from '../root/responseHandler/error.response';
-import DefaultValue from './defaultValue';
-import { createSetOfTasksColumnsByTask } from '../root/utils';
+import { createSetOfTasksColumnsByTask, createSetOfTasksColumnsByTask1 } from '../root/utils';
 import TasksColumns from './tasksColumns';
 import Board from './board';
 import { IColumnDoc } from '../05-column/interfaces/column';
@@ -66,7 +66,7 @@ taskSchema.static(
           position: position,
         },
       },
-      { session }
+      { new: true, session }
     );
 
     if (!updatedTask) throw new BadRequestError(`Task with ${taskId} is not found`);
@@ -76,47 +76,53 @@ taskSchema.static(
 
 taskSchema.static(
   'createNewTask',
-  async function createNewtAsk({ boardId, groupId, data, session }: ICreateNewTask) {
-    const foundBoard = await Board.findById(boardId)
+  async function createNewTask({ boardId, groupId, data, session }: ICreateNewTask) {
+    const foundBoard = await Board.findById(boardId, {}, { session })
       .populate({
         path: 'columns',
-        select: '_id name belongType position',
-        options: {
-          sort: { position: 1 },
+        select: '_id name defaultValues',
+        populate: {
+          path: 'defaultValues',
+          select: '_id value color canEditColor',
+          match: {
+            canEditColor: false,
+          },
         },
       })
       .lean();
 
     if (!foundBoard) throw new BadRequestError('Board is not found');
 
-    const columns = foundBoard.columns as NonNullable<IColumnDoc>[];
-
-    const findingDefaulValuePromises = columns.map((column) =>
-      DefaultValue.findOne({ belongType: column.belongType }, {}, { session }).select(
-        '_id value color'
-      )
-    );
-
-    const foundDefaultValues = await Promise.all(findingDefaulValuePromises);
-    const [createdNewTask] = await this.create([{ ...data }], { session });
-
-    const updatedTask = await createSetOfTasksColumnsByTask({
-      defaultValues: foundDefaultValues,
-      columns,
-      taskDoc: createdNewTask,
+    const [createdNewTask] = (await this.create([{ ...data }], {
       session,
-    });
+    })) as NonNullable<ITaskDoc>[];
 
     const updatedGroup = await Group.findByIdAndUpdate(
       groupId,
       {
         $push: {
-          tasks: createdNewTask._id,
+          tasks: createdNewTask!._id,
         },
       },
       { session }
     );
     if (!updatedGroup) throw new BadRequestError('Group is not found');
+
+    const createdNewTasksColumns = await createSetOfTasksColumnsByTask({
+      columns: foundBoard.columns as NonNullable<IColumnDoc>[],
+      taskDoc: createdNewTask,
+      session,
+    });
+
+    const updatedTask = await Task.findByIdAndUpdate(
+      createdNewTask._id,
+      {
+        $set: {
+          values: createdNewTasksColumns.map((tasksColumns) => tasksColumns._id),
+        },
+      },
+      { new: true, session }
+    );
 
     return await updatedTask!.populate({
       path: 'values',
@@ -130,28 +136,52 @@ taskSchema.static(
 );
 
 taskSchema.static(
-  'createNewTasks',
-  async function createNewTasks({ columns, session }: ICreateNewTasks): Promise<ITaskDoc[]> {
-    // Get all values default of these columns
-    const findingDefaulValuePromises = columns.map((column) =>
-      DefaultValue.findOne({ belongType: column.belongType }, {}, { session }).select(
-        '_id value color'
-      )
+  'updateAllPositionsInValue',
+  async function updateAllColumn({
+    changedPositions,
+    desiredPositions,
+    taskId,
+    session,
+  }: IUpdateAllPositionsInValue) {
+    const foundTask = await this.findById(taskId);
+    if (!foundTask) throw new BadRequestError('Task is not found');
+    const values = foundTask.values;
+    const changedPositionValues = changedPositions.map(
+      (changedPosition) => values[changedPosition]
     );
+    desiredPositions.forEach((desiredPosition, index) => {
+      values[desiredPosition] = changedPositionValues[index];
+    });
 
-    const foundDefaultValues = await Promise.all(findingDefaulValuePromises);
+    await foundTask.updateOne(
+      {
+        $set: {
+          values: values,
+        },
+      },
+      { session }
+    );
+  }
+);
+
+taskSchema.static(
+  'createNewTasks',
+  async function createNewTasks({ columns, selectedDefaultValues, session }: ICreateNewTasks) {
+    // Get all values default of these columns
 
     const taskObjs: ITask[] = [
-      { name: 'Task 1', position: 1, values: [] },
-      { name: 'Task 2', position: 2, values: [] },
-      { name: 'Task 1', position: 1, values: [] },
-      { name: 'Task 2', position: 2, values: [] },
+      { name: 'Task 1', position: 0, values: [] },
+      { name: 'Task 2', position: 1, values: [] },
+      { name: 'Task 1', position: 0, values: [] },
+      { name: 'Task 2', position: 1, values: [] },
     ];
 
-    const createdInsertTasks = await this.insertMany(taskObjs, { session });
+    const createdInsertTasks = (await this.insertMany(taskObjs, {
+      session,
+    })) as NonNullable<ITaskDoc>[];
     const updatingCreatedTasks = createdInsertTasks.map((task) =>
-      createSetOfTasksColumnsByTask({
-        defaultValues: foundDefaultValues,
+      createSetOfTasksColumnsByTask1({
+        selectedDefaultValues,
         columns,
         taskDoc: task,
         session,
@@ -159,13 +189,17 @@ taskSchema.static(
     );
 
     const createdNewTasks = await Promise.all(updatingCreatedTasks);
+
     return createdNewTasks;
   }
 );
 
 taskSchema.static(
   'updateAllPositionTasks',
-  async function updateAllPositionTasks({ tasks, session }: IUpdateAllPositionTasks) {
+  async function updateAllPositionTasks({
+    tasks,
+    session,
+  }: IUpdateAllPositionTasks): Promise<NonNullable<ITaskDoc>[]> {
     const updatingAllTaskPromises = tasks.map((task, index) =>
       this.findByIdAndUpdatePosition({ taskId: task._id, position: index, session })
     );
@@ -176,17 +210,19 @@ taskSchema.static(
 
 taskSchema.static(
   'deleteTask',
-  async function deleteTask({ groupId, taskId, session }: IDeleteTask) {
+  async function deleteTask({ groupDoc, taskId, session }: IDeleteTask) {
     const deletedTask = await this.findByIdAndDelete(taskId, { session });
     if (!deletedTask) throw new BadRequestError('Task is not found');
 
-    if (groupId) {
-      const updatedGroup = await Group.findByIdAndUpdate(groupId, {
-        $pull: {
-          tasks: deletedTask._id,
+    if (groupDoc) {
+      await groupDoc.updateOne(
+        {
+          $pull: {
+            tasks: deletedTask._id,
+          },
         },
-      });
-      if (!updatedGroup) throw new BadRequestError('Group is not found');
+        { session }
+      );
     }
 
     await TasksColumns.deleteMany({ _id: { $in: deletedTask.values } }, { session });

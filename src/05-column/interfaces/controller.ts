@@ -7,6 +7,7 @@ import { Types } from 'mongoose';
 
 export interface IColumnController<T extends Request> extends IControllerWithoutGet<T> {
   getAllTypes: Fn<T>;
+  updateAllColumns: Fn<T>;
 }
 
 export interface ICreateColumnResult {

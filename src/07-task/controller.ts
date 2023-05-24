@@ -49,10 +49,15 @@ class TaskController<T extends IRequestWithAuth> implements ITaskController<T> {
   });
 
   updateAllTasks: Fn<T> = catchAsync(async (req, res, next) => {
+    const updatedAllTasks = await TaskService.updateAllTasks({
+      groupId: req.params.groupId,
+      tasks: req.body.tasks,
+    });
+
     new OK({
       message: 'Update all tasks successfully',
       metadata: {
-        tasks: [],
+        tasks: updatedAllTasks,
       },
     }).send(res);
   });

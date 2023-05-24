@@ -35,6 +35,7 @@ class GroupController<T extends IRequestWithAuth> implements IGroupController<T>
 
   updateAllGroups: Fn<T> = catchAsync(async (req, res, next) => {
     const updatedAllGroups = await GroupService.updateAllGroups({
+      boardId: req.params.boardId,
       groups: req.body.groups,
     });
     new OK({
@@ -42,7 +43,7 @@ class GroupController<T extends IRequestWithAuth> implements IGroupController<T>
       metadata: {
         groups: updatedAllGroups,
       },
-    });
+    }).send(res);
   });
 
   deleteOne: Fn<T> = catchAsync(async (req, res, next) => {

@@ -8,7 +8,10 @@ import {
   ICreateNewColumn,
   ICreateNewColumnResult,
   ICreateNewColumns,
+  ICreateNewColumnsResult,
   IDeleteColumn,
+  IFindByColumnAndUpdatePosition,
+  IUpdateAllColumns,
 } from '../05-column/interfaces/column';
 import db from '../root/db';
 import Type from './type';
@@ -17,6 +20,8 @@ import Board from './board';
 import { BadRequestError } from '../root/responseHandler/error.response';
 import TasksColumns from './tasksColumns';
 import DefaultValue from './defaultValue';
+import { IDefaultValueDoc } from '../08-value/interfaces/defaultValue';
+import Task from './task';
 
 const DOCUMENT_NAME = 'Column';
 const COLLECTION_NAME = 'Columns';
@@ -54,6 +59,28 @@ var columnSchema = new Schema<IColumn, ColumnModel, IColumnMethods>(
 );
 
 columnSchema.static(
+  'findByIdAndUpdatePosition',
+  async function findByIdAndUpdatePosition({
+    columnId,
+    position,
+    session,
+  }: IFindByColumnAndUpdatePosition): Promise<NonNullable<IColumnDoc>> {
+    const updatedColumn = await this.findByIdAndUpdate(
+      columnId,
+      {
+        $set: {
+          position: position,
+        },
+      },
+      { new: true, session }
+    );
+    if (!updatedColumn) throw new BadRequestError('Column is not found');
+
+    return updatedColumn;
+  }
+);
+
+columnSchema.static(
   'createNewColumn',
   async function createNewColumn({
     boardId,
@@ -72,20 +99,23 @@ columnSchema.static(
       session,
     });
 
-    const [createdNewColumn] = await this.create([
-      {
-        name: foundType.name,
-        belongType: foundType._id,
-        position,
-        defaultValues: createdNewDefaultValues.map((value) => value._id),
-      },
-    ]);
+    const [createdNewColumn] = await this.create(
+      [
+        {
+          name: foundType.name,
+          belongType: foundType._id,
+          position,
+          defaultValues: createdNewDefaultValues.map((value) => value._id),
+        },
+      ],
+      { session }
+    );
 
     const updatedBoard = await Board.findByIdAndUpdate(
       boardId,
       {
         $push: {
-          columns: createdNewColumn,
+          columns: createdNewColumn._id,
         },
       },
       { session }
@@ -96,6 +126,7 @@ columnSchema.static(
       boardDoc: updatedBoard,
       columnDoc: createdNewColumn,
       defaultValues: createdNewDefaultValues,
+      position,
       session,
     });
 
@@ -113,12 +144,13 @@ columnSchema.static(
     boardId,
     userId,
     session,
-  }: ICreateNewColumns): Promise<NonNullable<IColumnDoc>[]> {
+  }: ICreateNewColumns): Promise<ICreateNewColumnsResult> {
     const findingStatusType = Type.findOne({ name: MultipleValueTypes.STATUS });
     const findingDateType = Type.findOne({ name: SingleValueTypes.DATE });
     const foundTypes = await Promise.all([findingStatusType, findingDateType]);
 
     const newColumnObjs: IColumn[] = [];
+    const selectedDefaultValue: IDefaultValueDoc[] = [];
     for (const [index, type] of foundTypes.entries()) {
       const createdNewDefaultValues = await DefaultValue.createNewDefaultValuesByColumn({
         boardId: new Types.ObjectId(boardId),
@@ -126,10 +158,15 @@ columnSchema.static(
         createdBy: userId,
         session,
       });
+      if (createdNewDefaultValues.length === 0) {
+        selectedDefaultValue.push(null);
+      } else {
+        selectedDefaultValue.push(createdNewDefaultValues.at(-1)!);
+      }
 
       newColumnObjs.push({
         name: type!.name,
-        position: index + 1,
+        position: index,
         belongType: type!._id,
         defaultValues: createdNewDefaultValues.map((value) => value._id),
       });
@@ -150,18 +187,74 @@ columnSchema.static(
       ])
     );
 
-    return await Promise.all(gettingDefaultValuesFromColPromises);
+    const gotDefaultValuesFromColumns = await Promise.all(gettingDefaultValuesFromColPromises);
+
+    return {
+      createdNewColumns: gotDefaultValuesFromColumns,
+      selectedDefaultValues: selectedDefaultValue,
+    };
+  }
+);
+
+columnSchema.static(
+  'updateAllColumnsForDelete',
+  async function updateAllColumnsForDelete({ columns, session }: IUpdateAllColumns): Promise<void> {
+    const updatingAllColumnPromises = columns.map((column, index) => {
+      return this.findByIdAndUpdatePosition({ columnId: column._id, position: index, session });
+    });
+
+    await Promise.all(updatingAllColumnPromises);
+  }
+);
+
+columnSchema.static(
+  'updateAllColumns',
+  async function updateAllColumns({
+    columns,
+    session,
+  }: IUpdateAllColumns): Promise<NonNullable<IColumnDoc>[]> {
+    const changedPositions: number[] = [];
+    const desiredPositions: number[] = [];
+    const updatingAllColumnPromises = columns.map((column, index) => {
+      if (index !== column.position) {
+        changedPositions.push(column.position);
+        desiredPositions.push(index);
+      }
+      return this.findByIdAndUpdatePosition({ columnId: column._id, position: index, session });
+    });
+
+    if (changedPositions.length === 0) throw new BadRequestError(`Position of columns is the same`);
+    const updatedAllColumns = await Promise.all(updatingAllColumnPromises);
+
+    const foundAllTasksColumns = await TasksColumns.find(
+      {
+        belongColumn: { $in: updatedAllColumns[0]!._id },
+      },
+      {},
+      { session }
+    );
+
+    const updatingValuesInTaskPromises = foundAllTasksColumns.map((tasksColumns) =>
+      Task.updateAllPositionsInValue({
+        changedPositions,
+        desiredPositions,
+        taskId: tasksColumns.belongTask,
+        session,
+      })
+    );
+
+    await Promise.all(updatingValuesInTaskPromises);
+    return updatedAllColumns;
   }
 );
 
 columnSchema.static(
   'deleteColumn',
-  async function deleteColumn({ boardId, columnId, session }: IDeleteColumn) {
+  async function deleteColumn({ boardDoc, columnId, session }: IDeleteColumn) {
     const deletedColumn = await this.findByIdAndDelete(columnId, { session });
     if (!deletedColumn) throw new BadRequestError('Column is not found');
 
-    const updatedBoard = await Board.findByIdAndUpdate(
-      boardId,
+    await boardDoc.updateOne(
       {
         $pull: {
           columns: deletedColumn._id,
@@ -169,10 +262,15 @@ columnSchema.static(
       },
       { session }
     );
-    if (!updatedBoard) throw new BadRequestError('Board is not found');
+
+    // Delete all default values of this column
+    const deleteingDefaultValuesOfColumnPromise = DefaultValue.deleteMany(
+      { _id: { $in: deletedColumn.defaultValues } },
+      { session }
+    );
 
     // Delete all values in this column
-    const deleteTasksColumns = await TasksColumns.find(
+    const findingTasksColumnsPromise = TasksColumns.find(
       {
         belongColumn: { $in: deletedColumn._id },
       },
@@ -180,8 +278,13 @@ columnSchema.static(
       { session }
     );
 
-    // Remove all task id
-    const deleteingTasksColumnsPromises = deleteTasksColumns.map((tasksColumns) =>
+    const [_, foundTasksColumns] = await Promise.all([
+      deleteingDefaultValuesOfColumnPromise,
+      findingTasksColumnsPromise,
+    ]);
+
+    // Remove all tasksColumn id away from task
+    const deleteingTasksColumnsPromises = foundTasksColumns.map((tasksColumns) =>
       TasksColumns.deleteTasksColumnsByColumn({
         tasksColumnsDoc: tasksColumns,
         session,

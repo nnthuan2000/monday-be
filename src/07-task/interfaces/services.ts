@@ -11,6 +11,7 @@ export interface ICreateTaskParams {
 }
 
 export interface IUpdateAllTasksParams {
+  groupId: string;
   tasks: NonNullable<ITaskDoc>[];
 }
 

@@ -33,11 +33,11 @@ class AcessController<T extends IRequestWithAuth> implements IAccessController<T
   });
 
   sendCode: Fn<T> = catchAsync(async (req, res, next) => {
-    const { email, password } = req.body;
-    if (!email || !password) throw new BadRequestError('Missing some fields');
+    const { email } = req.body;
+    if (!email) throw new BadRequestError('Missing some fields');
     new OK({
       message: 'Send code again successfully',
-      metadata: await AccessService.sendCodeAgain({ email, password }),
+      metadata: await AccessService.sendCodeAgain({ email }),
     }).send(res);
   });
 

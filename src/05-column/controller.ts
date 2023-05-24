@@ -21,7 +21,7 @@ class ColumnController<T extends IRequestWithAuth> implements IColumnController<
     const { createdNewColumn, defaultValues, tasksColumnsIds } = await ColumnService.createColumn({
       boardId: req.params.boardId,
       userId: req.user._id,
-      ...req.body,
+      columns: req.body.columns,
     });
     new CREATED({
       message: 'Create a new column successfully',
@@ -46,8 +46,25 @@ class ColumnController<T extends IRequestWithAuth> implements IColumnController<
     }).send(res);
   });
 
+  updateAllColumns: Fn<T> = catchAsync(async (req, res, next) => {
+    const updatedAllColumns = await ColumnService.updateAllColumns({
+      boardId: req.params.boardId,
+      columns: req.body.columns,
+    });
+    new OK({
+      message: 'Update all columns successfully',
+      metadata: {
+        columns: updatedAllColumns,
+      },
+    }).send(res);
+  });
+
   deleteOne: Fn<T> = catchAsync(async (req, res, next) => {
-    await ColumnService.deleteColumn({ columnId: req.params.id, boardId: req.params.boardId });
+    await ColumnService.deleteColumn({
+      columnId: req.params.id,
+      boardId: req.params.boardId,
+      columns: req.body.columns,
+    });
     new OK({
       message: 'Delete a column succesfully',
       metadata: null,

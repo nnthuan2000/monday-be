@@ -1,6 +1,8 @@
 import { ClientSession, Model, Types } from 'mongoose';
 import { Doc, DocObj } from '../../root/app.interfaces';
+import { IDefaultValueDoc } from '../../08-value/interfaces/defaultValue';
 import { IColumnDoc } from '../../05-column/interfaces/column';
+import { IBoardDoc } from '../../04-board/interfaces/board';
 
 export interface IGroup {
   name: string;
@@ -29,9 +31,8 @@ export interface ICreateNewGroup {
 }
 
 export interface ICreateNewGroups {
-  boardId: Types.ObjectId | string;
   columns: NonNullable<IColumnDoc>[];
-  data?: IGroup;
+  selectedDefaultValues: IDefaultValueDoc[];
   session: ClientSession;
 }
 
@@ -41,7 +42,7 @@ export interface IUpdateAllPositionGroups {
 }
 
 export interface IDeleteGroup {
-  boardId?: string;
+  boardDoc?: NonNullable<IBoardDoc>;
   groupId: Types.ObjectId | string;
   session: ClientSession;
 }
@@ -64,9 +65,8 @@ export interface GroupModel extends Model<IGroup, {}, IGroupMethods> {
   createNewGroup({ boardId, data, session }: ICreateNewGroup): Promise<NonNullable<IGroupDoc>>;
 
   createNewGroups({
-    boardId,
     columns,
-    data,
+    selectedDefaultValues,
     session,
   }: ICreateNewGroups): Promise<NonNullable<IGroupDoc>[]>;
 
@@ -75,5 +75,5 @@ export interface GroupModel extends Model<IGroup, {}, IGroupMethods> {
     session,
   }: IUpdateAllPositionGroups): Promise<NonNullable<IGroupDoc>[]>;
 
-  deleteGroup({ boardId, session }: IDeleteGroup): Promise<null>;
+  deleteGroup({ boardDoc, groupId, session }: IDeleteGroup): Promise<null>;
 }

@@ -70,30 +70,27 @@ groupSchema.static(
 
 groupSchema.static(
   'createNewGroups',
-  async function createNewGroups({
-    columns,
-    session,
-  }: ICreateNewGroups): Promise<NonNullable<IGroupDoc>[]> {
-    //Create two new tasks and new values of these task with columns
-
+  async function createNewGroups({ columns, selectedDefaultValues, session }: ICreateNewGroups) {
     //Create two new tasks and new values of these task with columns
     let groupObjs: IGroup[] = [];
     const tasksPerGroup = 2;
-    const createdNewTasks = await Task.createNewTasks({ columns, session });
+    const createdNewTasks = await Task.createNewTasks({ columns, selectedDefaultValues, session });
 
     for (let i = 0; i < createdNewTasks.length; i += tasksPerGroup) {
       const tasksSlice = createdNewTasks.slice(i, i + tasksPerGroup);
 
       const group: IGroup = {
         name: `New Group`,
-        position: i / tasksPerGroup + 1,
+        position: i / tasksPerGroup,
         tasks: tasksSlice.map((task) => task._id),
       };
 
       groupObjs.push(group);
     }
 
-    const createdNewGroups = await this.insertMany(groupObjs, { session });
+    const createdNewGroups = (await this.insertMany(groupObjs, {
+      session,
+    })) as NonNullable<IGroupDoc>[];
 
     const groupPromises = createdNewGroups.map((group) =>
       group.populate({
@@ -128,7 +125,7 @@ groupSchema.static(
           position: position,
         },
       },
-      { session }
+      { new: true, session }
     );
     if (!updatedGroup) throw new BadRequestError(`Group with id: ${groupId} is not found`);
     return updatedGroup;
@@ -155,15 +152,13 @@ groupSchema.static(
 
 groupSchema.static(
   'deleteGroup',
-  async function deleteGroup({ boardId, groupId, session }: IDeleteGroup) {
+  async function deleteGroup({ boardDoc, groupId, session }: IDeleteGroup) {
     const deletedGroup = await this.findByIdAndDelete(groupId, { session });
     if (!deletedGroup) throw new BadRequestError('Group is not found');
 
     // Delete all tasks and values of each task in this group
-
-    if (boardId) {
-      const updatedBoard = await Board.findByIdAndUpdate(
-        boardId,
+    if (boardDoc) {
+      await boardDoc.updateOne(
         {
           $pull: {
             groups: deletedGroup._id,
@@ -171,9 +166,6 @@ groupSchema.static(
         },
         { session }
       );
-      if (!updatedBoard) throw new BadRequestError('Board is not found');
-      if (updatedBoard.groups.length === 0)
-        throw new BadRequestError('Board has to have at least one group');
     }
 
     const deleteTaskPromises = deletedGroup.tasks.map((task) =>
