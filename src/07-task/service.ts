@@ -1,5 +1,3 @@
-import { IColumnDoc } from '../05-column/interfaces/column';
-import Board from '../models/board';
 import Task from '../models/task';
 import { BadRequestError } from '../root/responseHandler/error.response';
 import { performTransaction } from '../root/utils/performTransaction';
@@ -7,6 +5,7 @@ import {
   ICreateTaskParams,
   IDeleteTaskParams,
   IGetTaskParams,
+  IUpdateAllTasksParams,
   IUpdateTaskParams,
 } from './interfaces/services';
 import { ITaskDoc } from './interfaces/task';
@@ -18,30 +17,31 @@ export default class TaskService {
     return foundTask;
   }
 
-  static async createTask({
-    boardId,
-    groupId,
-    data,
-  }: ICreateTaskParams): Promise<NonNullable<ITaskDoc>> {
+  static async createTask({ boardId, groupId, tasks }: ICreateTaskParams) {
     return await performTransaction(async (session) => {
-      const foundBoard = await Board.findById(boardId)
-        .populate({
-          path: 'columns',
-          select: '_id name belongType position',
-          options: {
-            sort: { position: 1 },
-          },
-        })
-        .lean();
+      let createdNewTask: ITaskDoc = null;
+      const updatingPositionTasks: Promise<NonNullable<ITaskDoc>>[] = [];
+      for (const [index, task] of tasks.entries()) {
+        if (task._id) {
+          const updatingTask = Task.findByIdAndUpdatePosition({
+            taskId: task._id,
+            position: index,
+            session,
+          });
 
-      if (!foundBoard) throw new BadRequestError('Board is not found');
+          updatingPositionTasks.push(updatingTask);
+        } else {
+          createdNewTask = await Task.createNewTask({
+            boardId,
+            groupId,
+            data: { ...task },
+            session,
+          });
+        }
+      }
 
-      const createdNewTask = await Task.createNewTasks({
-        groupId,
-        data,
-        columns: foundBoard.columns as NonNullable<IColumnDoc>[],
-        session,
-      });
+      await Promise.all(updatingPositionTasks);
+      if (createdNewTask) throw new BadRequestError('Missing some fields when create a new task');
 
       return createdNewTask;
     });
@@ -53,9 +53,16 @@ export default class TaskService {
     return updatedTask;
   }
 
-  static async deleteTask({ groupId, taskId }: IDeleteTaskParams) {
+  static async updateAllTasks({ tasks }: IUpdateAllTasksParams) {
+    return await performTransaction(async (session) => {
+      return await Task.updateAllPositionTasks({ tasks, session });
+    });
+  }
+
+  static async deleteTask({ groupId, taskId, tasks }: IDeleteTaskParams) {
     return await performTransaction(async (session) => {
       await Task.deleteTask({ groupId, taskId, session });
+      await Task.updateAllPositionTasks({ tasks, session });
     });
   }
 }
