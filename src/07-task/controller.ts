@@ -1,4 +1,5 @@
 import { IRequestWithAuth } from '../root/app.interfaces';
+import { BadRequestError } from '../root/responseHandler/error.response';
 import { CREATED, OK } from '../root/responseHandler/success.response';
 import { Fn, catchAsync } from '../root/utils/catchAsync';
 import { ITaskController } from './interfaces/controller';
@@ -21,10 +22,12 @@ class TaskController<T extends IRequestWithAuth> implements ITaskController<T> {
   });
 
   createOne: Fn<T> = catchAsync(async (req, res, next) => {
+    const { tasks } = req.body;
+    if (!tasks) throw new BadRequestError('Invalid transmitted data');
     const createdNewTask = await TaskService.createTask({
       boardId: req.params.boardId,
       groupId: req.params.groupId,
-      tasks: req.body.tasks,
+      tasks,
     });
 
     new CREATED({
@@ -49,9 +52,11 @@ class TaskController<T extends IRequestWithAuth> implements ITaskController<T> {
   });
 
   updateAllTasks: Fn<T> = catchAsync(async (req, res, next) => {
+    const { tasks } = req.body;
+    if (!tasks) throw new BadRequestError('Invalid transmitted data');
     const updatedAllTasks = await TaskService.updateAllTasks({
       groupId: req.params.groupId,
-      tasks: req.body.tasks,
+      tasks,
     });
 
     new OK({
@@ -63,10 +68,12 @@ class TaskController<T extends IRequestWithAuth> implements ITaskController<T> {
   });
 
   deleteOne: Fn<T> = catchAsync(async (req, res, next) => {
+    const { tasks } = req.body;
+    if (!tasks) throw new BadRequestError('Invalid transmitted data');
     await TaskService.deleteTask({
       groupId: req.params.groupId,
       taskId: req.params.id,
-      tasks: req.body.tasks,
+      tasks,
     });
     new OK({
       message: 'Delete task successfully',
