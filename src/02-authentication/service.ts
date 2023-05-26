@@ -67,7 +67,7 @@ export default class AccessService {
       },
     });
 
-    return this.sendGamil({ email, code, codeLifeTimeMinutes });
+    return this.sendGmail({ email, code, codeLifeTimeMinutes });
   }
 
   static async signUp({ name, email, password }: ISignUpParams) {
@@ -133,7 +133,7 @@ export default class AccessService {
         { session }
       );
 
-      await this.sendGamil({ email, code, codeLifeTimeMinutes });
+      await this.sendGmail({ email, code, codeLifeTimeMinutes });
     });
   }
 
@@ -171,7 +171,7 @@ export default class AccessService {
     };
   }
 
-  static async sendGamil({ email, code, codeLifeTimeMinutes }: ISendGmail) {
+  static async sendGmail({ email, code, codeLifeTimeMinutes }: ISendGmail) {
     // const accessToken = await oAuth2Client.getAccessToken();
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
