@@ -1,9 +1,10 @@
-import { IFullController, IRequestWithAuth } from '../root/app.interfaces';
+import { IRequestWithAuth } from '../root/app.interfaces';
 import { CREATED, OK } from '../root/responseHandler/success.response';
 import { Fn, catchAsync } from '../root/utils/catchAsync';
+import { ITaskController } from './interfaces/controller';
 import TaskService from './service';
 
-class TaskController<T extends IRequestWithAuth> implements IFullController<T> {
+class TaskController<T extends IRequestWithAuth> implements ITaskController<T> {
   getAll: Fn<T> = catchAsync(async (req, res, next) => {});
 
   getOne: Fn<T> = catchAsync(async (req, res, next) => {
@@ -51,6 +52,16 @@ class TaskController<T extends IRequestWithAuth> implements IFullController<T> {
     await TaskService.deleteTask({ groupId: req.params.groupId, taskId: req.params.id });
     new OK({
       message: 'Delete task successfully',
+      metadata: null,
+    }).send(res);
+  });
+
+  deleteAllTasks: Fn<T> = catchAsync(async (req, res, next) => {
+    await TaskService.deleteAllTasks({
+      groupId: req.params.groupId,
+    });
+    new OK({
+      message: 'Delete all tasks in group successfully',
       metadata: null,
     }).send(res);
   });

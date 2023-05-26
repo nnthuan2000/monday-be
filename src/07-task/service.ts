@@ -4,6 +4,7 @@ import { BadRequestError } from '../root/responseHandler/error.response';
 import { performTransaction } from '../root/utils/performTransaction';
 import {
   ICreateTaskParams,
+  IDeleteAllTasksParams,
   IDeleteTaskParams,
   IGetTaskParams,
   IUpdateTaskParams,
@@ -61,6 +62,12 @@ export default class TaskService {
   static async deleteTask({ groupId, taskId }: IDeleteTaskParams) {
     return await performTransaction(async (session) => {
       await Task.deleteTask({ groupId, taskId, session });
+    });
+  }
+
+  static async deleteAllTasks({ groupId }: IDeleteAllTasksParams) {
+    return await performTransaction(async (session) => {
+      await Task.deleteAllTasks({ groupId, session });
     });
   }
 }
