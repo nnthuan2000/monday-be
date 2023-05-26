@@ -25,3 +25,7 @@ export interface IDeleteTaskParams {
   tasks: NonNullable<ITaskDoc>[];
   taskId: string;
 }
+
+export interface IDeleteAllTasksParams {
+  groupId: string;
+}

@@ -56,6 +56,11 @@ export interface IDeleteTask {
   session: ClientSession;
 }
 
+export interface IDeleteAllTasks {
+  groupId: string;
+  session: ClientSession;
+}
+
 // For instance methods
 
 export type ITaskDoc = Doc<ITask, ITaskMethods>;
@@ -96,4 +101,6 @@ export interface TaskModel extends Model<ITask, {}, ITaskMethods> {
     session,
   }: IUpdateAllPositionsInValue): Promise<null>;
   deleteTask({ groupDoc, taskId, session }: IDeleteTask): Promise<null>;
+
+  deleteAllTasks({ groupId, session }: IDeleteAllTasks): Promise<null>;
 }

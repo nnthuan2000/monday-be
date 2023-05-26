@@ -2,6 +2,7 @@ import { Schema } from 'mongoose';
 import {
   ICreateNewTask,
   ICreateNewTasks,
+  IDeleteAllTasks,
   IDeleteTask,
   IFindByIdAndUpdatePosition,
   ITask,
@@ -226,6 +227,19 @@ taskSchema.static(
     }
 
     await TasksColumns.deleteMany({ _id: { $in: deletedTask.values } }, { session });
+  }
+);
+
+taskSchema.static(
+  'deleteAllTasks',
+  async function deleteAllTasks({ groupId, session }: IDeleteAllTasks) {
+    const foundGroup = await Group.findById(groupId, {}, { session });
+    if (!foundGroup) throw new BadRequestError('Group is not found');
+    const deletingTaskPromises = foundGroup.tasks.map((task) =>
+      this.deleteTask({ taskId: task, session })
+    );
+
+    await Promise.all(deletingTaskPromises);
   }
 );
 

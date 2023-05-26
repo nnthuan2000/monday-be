@@ -73,6 +73,16 @@ class TaskController<T extends IRequestWithAuth> implements ITaskController<T> {
       metadata: null,
     }).send(res);
   });
+
+  deleteAllTasks: Fn<T> = catchAsync(async (req, res, next) => {
+    await TaskService.deleteAllTasks({
+      groupId: req.params.groupId,
+    });
+    new OK({
+      message: 'Delete all tasks in group successfully',
+      metadata: null,
+    }).send(res);
+  });
 }
 
 const taskController = new TaskController();
