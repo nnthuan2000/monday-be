@@ -3,7 +3,7 @@ import Column from '../models/column';
 import Type from '../models/type';
 import { BadRequestError } from '../root/responseHandler/error.response';
 import { performTransaction } from '../root/utils/performTransaction';
-import { IColumnDoc, ICreateNewColumnResult } from './interfaces/column';
+import { ICreateNewColumnResult } from './interfaces/column';
 import { ICreateColumnResult } from './interfaces/controller';
 import {
   ICreateColumnParams,
@@ -24,16 +24,14 @@ export default class ColumnService {
     columns,
   }: ICreateColumnParams): Promise<ICreateColumnResult> {
     return await performTransaction<ICreateColumnResult>(async (session) => {
-      const workingColumnPromises: Promise<NonNullable<IColumnDoc> | ICreateNewColumnResult>[] = [];
       let creatingNewColumnInfoPromise: Promise<ICreateNewColumnResult> | null = null;
-      for (const [index, column] of columns.entries()) {
+      const workingColumnPromises = columns.map((column, index) => {
         if (column._id) {
-          const updatingColumnPromise = Column.findByIdAndUpdatePosition({
+          return Column.findByIdAndUpdatePosition({
             columnId: column._id,
             position: index,
             session,
           });
-          workingColumnPromises.push(updatingColumnPromise);
         } else {
           creatingNewColumnInfoPromise = Column.createNewColumn({
             boardId,
@@ -43,13 +41,13 @@ export default class ColumnService {
             session,
           });
         }
-      }
+      });
       if (!creatingNewColumnInfoPromise)
         throw new BadRequestError('Missing some fields when create a new column');
-      workingColumnPromises.push(creatingNewColumnInfoPromise);
+      workingColumnPromises.unshift(creatingNewColumnInfoPromise);
 
-      const finishedColumns = await Promise.all(workingColumnPromises);
-      return { ...finishedColumns.at(-1) };
+      const [createdNewColumnInfo] = await Promise.all(workingColumnPromises);
+      return { createdNewColumnInfo };
     });
   }
 

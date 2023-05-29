@@ -21,17 +21,14 @@ export default class TaskService {
 
   static async createTask({ boardId, groupId, tasks }: ICreateTaskParams) {
     return await performTransaction(async (session) => {
-      let creatingNewTaskPromise: Promise<ITaskDoc> | null = null;
-      const updatingPositionTasks: Promise<NonNullable<ITaskDoc>>[] = [];
-      for (const [index, task] of tasks.entries()) {
+      let creatingNewTaskPromise: Promise<NonNullable<ITaskDoc>> | null = null;
+      const workingPositionTasks = tasks.map((task, index) => {
         if (task._id) {
-          const updatingTask = Task.findByIdAndUpdatePosition({
+          return Task.findByIdAndUpdatePosition({
             taskId: task._id,
             position: index,
             session,
           });
-
-          updatingPositionTasks.push(updatingTask);
         } else {
           creatingNewTaskPromise = Task.createNewTask({
             boardId,
@@ -40,13 +37,14 @@ export default class TaskService {
             session,
           });
         }
-      }
+      });
 
       if (!creatingNewTaskPromise)
         throw new BadRequestError('Missing some fields when create a new task');
-      const finishedTasks = await Promise.all([...updatingPositionTasks, creatingNewTaskPromise]);
+      workingPositionTasks.unshift(creatingNewTaskPromise);
+      const [createdNewTask] = await Promise.all(workingPositionTasks);
 
-      return finishedTasks.at(-1);
+      return createdNewTask;
     });
   }
 

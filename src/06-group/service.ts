@@ -6,25 +6,21 @@ import {
   IUpdateGroupParams,
 } from './interfaces/services';
 import { performTransaction } from '../root/utils/performTransaction';
-import { IGroupDoc, IGroupDocObj } from './interfaces/group';
+import { IGroupDoc } from './interfaces/group';
 import Group from '../models/group';
 import Board from '../models/board';
 
 export default class GroupService {
   static async createGroup({ boardId, groups }: ICreateGroupParams) {
-    let creatingNewGroupPromise: Promise<NonNullable<IGroupDoc>>;
-    const updatingAllGroupsPromises: Promise<IGroupDocObj>[] = [];
+    let creatingNewGroupPromise: Promise<NonNullable<IGroupDoc>> | null = null;
     return await performTransaction(async (session) => {
-      for (const [index, group] of groups.entries()) {
+      const workingAllGroupPromises = groups.map((group, index) => {
         if (group._id) {
-          const updatingGroupPromise = this.updateGroup({
+          return Group.findByIdAndUpdatePosition({
             groupId: group._id,
-            updationData: {
-              position: index,
-            },
+            position: index,
             session,
           });
-          updatingAllGroupsPromises.push(updatingGroupPromise);
         } else {
           creatingNewGroupPromise = Group.createNewGroup({
             boardId,
@@ -35,13 +31,14 @@ export default class GroupService {
             session,
           });
         }
-      }
-      const finishedGroups = await Promise.all([
-        ...updatingAllGroupsPromises,
-        creatingNewGroupPromise,
-      ]);
+      });
 
-      return finishedGroups.at(-1);
+      if (!creatingNewGroupPromise)
+        throw new BadRequestError('Missing some fields when create a new group');
+      workingAllGroupPromises.unshift(creatingNewGroupPromise);
+      const [createdNewGroup] = await Promise.all(workingAllGroupPromises);
+
+      return createdNewGroup;
     });
   }
 
