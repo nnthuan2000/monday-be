@@ -52,12 +52,9 @@ class GroupController<T extends IRequestWithAuth> implements IGroupController<T>
   });
 
   deleteOne: Fn<T> = catchAsync(async (req, res, next) => {
-    const { groups } = req.body;
-    if (!groups) throw new BadRequestError('Invalid transmitted data');
     await GroupService.deleteGroup({
       boardId: req.params.boardId,
       groupId: req.params.id,
-      groups,
     });
     new OK({
       message: 'Delete group successfully',

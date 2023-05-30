@@ -14,7 +14,7 @@ import {
 } from '../07-task/interfaces/task';
 import db from '../root/db';
 import Group from './group';
-import { BadRequestError } from '../root/responseHandler/error.response';
+import { NotFoundError } from '../root/responseHandler/error.response';
 import { createSetOfTasksColumnsByTask, createSetOfTasksColumnsByTask1 } from '../root/utils';
 import TasksColumns from './tasksColumns';
 import Board from './board';
@@ -70,7 +70,7 @@ taskSchema.static(
       { new: true, session }
     );
 
-    if (!updatedTask) throw new BadRequestError(`Task with ${taskId} is not found`);
+    if (!updatedTask) throw new NotFoundError(`Task with ${taskId} is not found`);
     return updatedTask;
   }
 );
@@ -92,7 +92,7 @@ taskSchema.static(
       })
       .lean();
 
-    if (!foundBoard) throw new BadRequestError('Board is not found');
+    if (!foundBoard) throw new NotFoundError('Board is not found');
 
     const [createdNewTask] = (await this.create([{ ...data }], {
       session,
@@ -107,7 +107,7 @@ taskSchema.static(
       },
       { session }
     );
-    if (!updatedGroup) throw new BadRequestError('Group is not found');
+    if (!updatedGroup) throw new NotFoundError('Group is not found');
 
     const createdNewTasksColumns = await createSetOfTasksColumnsByTask({
       columns: foundBoard.columns as NonNullable<IColumnDoc>[],
@@ -145,7 +145,7 @@ taskSchema.static(
     session,
   }: IUpdateAllPositionsInValue) {
     const foundTask = await this.findById(taskId);
-    if (!foundTask) throw new BadRequestError('Task is not found');
+    if (!foundTask) throw new NotFoundError('Task is not found');
     const values = foundTask.values;
     const changedPositionValues = changedPositions.map(
       (changedPosition) => values[changedPosition]
@@ -213,7 +213,7 @@ taskSchema.static(
   'deleteTask',
   async function deleteTask({ groupDoc, taskId, session }: IDeleteTask) {
     const deletedTask = await this.findByIdAndDelete(taskId, { session });
-    if (!deletedTask) throw new BadRequestError('Task is not found');
+    if (!deletedTask) throw new NotFoundError('Task is not found');
 
     if (groupDoc) {
       await groupDoc.updateOne(
@@ -224,6 +224,27 @@ taskSchema.static(
         },
         { session }
       );
+
+      const foundAllTasksInGroup = await this.find(
+        {
+          _id: { $in: groupDoc.tasks },
+        },
+        {},
+        { session }
+      ).sort({ position: 1 });
+
+      const updatingPositionAllTasksPromises = foundAllTasksInGroup.map((task, index) =>
+        task.updateOne(
+          {
+            $set: {
+              position: index,
+            },
+          },
+          { session }
+        )
+      );
+
+      await Promise.all(updatingPositionAllTasksPromises);
     }
 
     await TasksColumns.deleteMany({ _id: { $in: deletedTask.values } }, { session });
@@ -234,7 +255,7 @@ taskSchema.static(
   'deleteAllTasks',
   async function deleteAllTasks({ groupId, session }: IDeleteAllTasks) {
     const foundGroup = await Group.findById(groupId, {}, { session });
-    if (!foundGroup) throw new BadRequestError('Group is not found');
+    if (!foundGroup) throw new NotFoundError('Group is not found');
     const deletingTaskPromises = foundGroup.tasks.map((task) =>
       this.deleteTask({ taskId: task, session })
     );

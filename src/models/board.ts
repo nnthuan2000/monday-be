@@ -9,7 +9,7 @@ import {
 } from '../04-board/interfaces/board';
 import db from '../root/db';
 import Column from './column';
-import { BadRequestError } from '../root/responseHandler/error.response';
+import { NotFoundError } from '../root/responseHandler/error.response';
 import Group from './group';
 import { convertToArrObj } from '../root/utils';
 import Workspace from './workspace';
@@ -128,7 +128,7 @@ boardSchema.static(
   'deleteBoard',
   async function deleteBoard({ workspaceId, boardId, session }: IDeleteBoard) {
     const deletedBoard = await this.findByIdAndDelete(boardId, { session });
-    if (!deletedBoard) throw new BadRequestError('Board is not found');
+    if (!deletedBoard) throw new NotFoundError('Board is not found');
 
     if (workspaceId) {
       const updatedWorkspace = await Workspace.findByIdAndUpdate(
@@ -140,7 +140,7 @@ boardSchema.static(
         },
         { session }
       );
-      if (!updatedWorkspace) throw new BadRequestError('Workspace is not found');
+      if (!updatedWorkspace) throw new NotFoundError('Workspace is not found');
     }
 
     // Delete all columns and groups for each board

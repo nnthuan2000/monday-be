@@ -27,7 +27,6 @@ export interface IUpdateAllColumnsParams {
 }
 
 export interface IDeleteColumnParams {
-  columns: NonNullable<IColumnDoc>[];
   boardId: string;
   columnId: string;
 }

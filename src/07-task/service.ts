@@ -1,6 +1,6 @@
 import Group from '../models/group';
 import Task from '../models/task';
-import { BadRequestError } from '../root/responseHandler/error.response';
+import { BadRequestError, NotFoundError } from '../root/responseHandler/error.response';
 import { performTransaction } from '../root/utils/performTransaction';
 import {
   ICreateTaskParams,
@@ -15,7 +15,7 @@ import { ITaskDoc } from './interfaces/task';
 export default class TaskService {
   static async getTask({ taskId }: IGetTaskParams) {
     const foundTask = await Task.findById(taskId).lean();
-    if (!foundTask) throw new BadRequestError('Task is not found');
+    if (!foundTask) throw new NotFoundError('Task is not found');
     return foundTask;
   }
 
@@ -49,14 +49,15 @@ export default class TaskService {
   }
 
   static async updateTask({ taskId, updationData }: IUpdateTaskParams) {
+    if (updationData.position) throw new BadRequestError(`Can't modify position of task`);
     const updatedTask = await Task.findByIdAndUpdate(taskId, updationData, { new: true }).lean();
-    if (!updatedTask) throw new BadRequestError('Task is not found');
+    if (!updatedTask) throw new NotFoundError('Task is not found');
     return updatedTask;
   }
 
   static async updateAllTasks({ groupId, tasks }: IUpdateAllTasksParams) {
     const foundGroup = await Group.findById(groupId);
-    if (!foundGroup) throw new BadRequestError('Group is not found');
+    if (!foundGroup) throw new NotFoundError('Group is not found');
 
     if (foundGroup.tasks.length !== tasks.length)
       throw new BadRequestError('Please send all tasks in a board to update all position of tasks');
@@ -73,16 +74,12 @@ export default class TaskService {
     });
   }
 
-  static async deleteTask({ groupId, taskId, tasks }: IDeleteTaskParams) {
+  static async deleteTask({ groupId, taskId }: IDeleteTaskParams) {
     const foundGroup = await Group.findById(groupId);
-    if (!foundGroup) throw new BadRequestError('Group is not found');
-
-    if (foundGroup.tasks.length - 1 !== tasks.length)
-      throw new BadRequestError('Please send all the tasks when delete a task in group');
+    if (!foundGroup) throw new NotFoundError('Group is not found');
 
     return await performTransaction(async (session) => {
       await Task.deleteTask({ groupDoc: foundGroup, taskId, session });
-      await Task.updateAllPositionTasks({ tasks, session });
     });
   }
 

@@ -19,6 +19,5 @@ export interface IUpdateAllGroupsParams {
 
 export interface IDeleteGroupParams {
   boardId: string;
-  groups: NonNullable<IGroupDoc>[];
   groupId: string;
 }

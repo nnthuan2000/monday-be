@@ -66,12 +66,9 @@ class ColumnController<T extends IRequestWithAuth> implements IColumnController<
   });
 
   deleteOne: Fn<T> = catchAsync(async (req, res, next) => {
-    const { columns } = req.body;
-    if (!columns) throw new BadRequestError('Invalid transmitted data');
     await ColumnService.deleteColumn({
       columnId: req.params.id,
       boardId: req.params.boardId,
-      columns,
     });
     new OK({
       message: 'Delete a column succesfully',

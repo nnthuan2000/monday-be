@@ -1,23 +1,24 @@
 import Board from '../models/board';
 import DefaultValue from '../models/defaultValue';
 import TasksColumns from '../models/tasksColumns';
-import { BadRequestError } from '../root/responseHandler/error.response';
+import { BadRequestError, NotFoundError } from '../root/responseHandler/error.response';
 import { performTransaction } from '../root/utils/performTransaction';
 import {
   ICreateValueByTypeParams,
   IDeleteValueByTypeParams,
   IGetAllValuesByTypeParams,
-  ISetValueParams,
+  ISelectValueParams,
   IUpdateValueByTypeParams,
 } from './interfaces/services';
 import { SingleValueTypes } from '../05-column/constant';
 import Column from '../models/column';
 import { IColumnDocWithType } from '../05-column/interfaces/column';
+import { checkValidType } from '../root/utils/validator';
 
 export default class ValueService {
   static async getAllValuesByType({ boardId, columnId }: IGetAllValuesByTypeParams) {
     const foundColumn = await Column.findById(columnId).lean();
-    if (!foundColumn) throw new BadRequestError('Column is not found');
+    if (!foundColumn) throw new NotFoundError('Column is not found');
 
     const foundAllValues = await DefaultValue.find({
       belongBoard: { $in: [boardId, null] },
@@ -34,8 +35,8 @@ export default class ValueService {
       path: 'belongType',
       select: '_id name',
     })) as IColumnDocWithType;
-    if (!foundBoard) throw new BadRequestError('Board is not found');
-    if (!foundColumn) throw new BadRequestError('Column is not found');
+    if (!foundBoard) throw new NotFoundError('Board is not found');
+    if (!foundColumn) throw new NotFoundError('Column is not found');
     if (Object.values(SingleValueTypes).includes(foundColumn.belongType.name as SingleValueTypes)) {
       throw new BadRequestError(`This type can not create more value`);
     }
@@ -72,35 +73,48 @@ export default class ValueService {
         new: true,
         session,
       }).lean();
-      if (!updatedValue) throw new BadRequestError('Value is not found');
+      if (!updatedValue) throw new NotFoundError('Value is not found');
       if (!updatedValue.canEditColor && updationData.color)
         throw new BadRequestError(`This type can't edit color`);
       return updatedValue;
     });
   }
 
-  static async setValue({ tasksColumnsId, value, valueId }: ISetValueParams) {
-    if (!value && !valueId) throw new BadRequestError('Invalid transmitted data');
+  static async selectValue({ tasksColumnsId, value, valueId }: ISelectValueParams) {
+    const foundTasksColumns = await TasksColumns.findById(tasksColumnsId);
+    if (!foundTasksColumns) throw new NotFoundError('This box is not found');
+
     if (valueId) {
       const foundDefaultValue = await DefaultValue.findById(valueId).lean();
-      if (!foundDefaultValue) throw new BadRequestError('Value is not found');
+      if (!foundDefaultValue) throw new NotFoundError(`Default value of ${valueId} is not found`);
+      foundTasksColumns.valueId = foundDefaultValue._id;
+      return await foundTasksColumns.save();
     }
 
-    const updatedTasksColumns = await TasksColumns.findByIdAndUpdate(tasksColumnsId, {
-      $set: {
-        value,
-        valueId,
-      },
-    });
-    if (!updatedTasksColumns) throw new BadRequestError('This box is not found');
-    return updatedTasksColumns;
+    const foundColumnWithType = (await Column.findById(foundTasksColumns.belongColumn)
+      .populate({
+        path: 'belongType',
+        select: '_id name',
+      })
+      .lean()) as IColumnDocWithType;
+
+    if (!foundColumnWithType) throw new NotFoundError('Column of this box is not found');
+
+    const isValidType = checkValidType(
+      foundColumnWithType.belongType.name as SingleValueTypes,
+      value
+    );
+
+    if (!isValidType) throw new BadRequestError(`Value ${value} is incorrect format`);
+    foundTasksColumns.value = value;
+    return await foundTasksColumns.save();
   }
 
   static async deleteValueByType({ columnId, defaultValueId }: IDeleteValueByTypeParams) {
     return await performTransaction(async (session) => {
       const deletedValue = await DefaultValue.findByIdAndDelete(defaultValueId, { session });
-      if (!deletedValue) throw new BadRequestError('Value is not found');
-      if (!deletedValue.belongBoard)
+      if (!deletedValue) throw new NotFoundError('Value is not found');
+      if (deletedValue.canEditColor)
         throw new BadRequestError(`Default value of this type can't deleted`);
 
       const foundBoardWithColumns = await Board.findById(deletedValue.belongBoard).populate({
@@ -130,7 +144,7 @@ export default class ValueService {
         { session }
       );
 
-      if (!updatedColumn) throw new BadRequestError(`Column is not found`);
+      if (!updatedColumn) throw new NotFoundError(`Column is not found`);
     });
   }
 }

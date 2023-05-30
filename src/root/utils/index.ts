@@ -41,7 +41,7 @@ export const createSetOfTasksColumnsByTask = async ({
   const creatingTasksColumnsPromises = columns.map((column) =>
     TasksColumns.createNewTasksColumns({
       data: {
-        value: null,
+        value: '',
         valueId: column.defaultValues.length !== 0 ? column.defaultValues[0]._id : null,
         belongColumn: column._id,
         belongTask: taskDoc._id,
@@ -72,7 +72,7 @@ export const createSetOfTasksColumnsByTask1 = async ({
     const createdNewTasksColumns = await TasksColumns.create(
       [
         {
-          value: null,
+          value: '',
           valueId: selectedDefaultValues[i]?._id || null,
           belongColumn: column._id,
           belongTask: taskDoc._id,
@@ -115,7 +115,7 @@ export const createSetOfTasksColumnsByColumn = async ({
   const [createdNewTasksColumns] = await TasksColumns.create(
     [
       {
-        value: null,
+        value: '',
         valueId: defaultValue ? defaultValue._id : null,
         belongColumn: columnId,
         belongTask: taskDoc._id,

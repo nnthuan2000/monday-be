@@ -1,4 +1,4 @@
-import { BadRequestError } from '../root/responseHandler/error.response';
+import { BadRequestError, NotFoundError } from '../root/responseHandler/error.response';
 import { performTransaction } from '../root/utils/performTransaction';
 import {
   ICreateWorkspaceParams,
@@ -65,7 +65,7 @@ export default class WorkspaceService {
         },
       })
       .lean();
-    if (!foundWorkspace) throw new BadRequestError('Workspace is not found');
+    if (!foundWorkspace) throw new NotFoundError('Workspace is not found');
 
     return foundWorkspace;
   }
@@ -82,7 +82,7 @@ export default class WorkspaceService {
     const updatedWorkspace = await Workspace.findByIdAndUpdate(workspaceId, updationData, {
       new: true,
     });
-    if (!updatedWorkspace) throw new BadRequestError('Workspace is not found');
+    if (!updatedWorkspace) throw new NotFoundError('Workspace is not found');
     return updatedWorkspace;
   }
 

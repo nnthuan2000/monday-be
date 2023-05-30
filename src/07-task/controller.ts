@@ -68,12 +68,9 @@ class TaskController<T extends IRequestWithAuth> implements ITaskController<T> {
   });
 
   deleteOne: Fn<T> = catchAsync(async (req, res, next) => {
-    const { tasks } = req.body;
-    if (!tasks) throw new BadRequestError('Invalid transmitted data');
     await TaskService.deleteTask({
       groupId: req.params.groupId,
       taskId: req.params.id,
-      tasks,
     });
     new OK({
       message: 'Delete task successfully',

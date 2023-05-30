@@ -22,7 +22,6 @@ export interface IUpdateTaskParams {
 
 export interface IDeleteTaskParams {
   groupId: string;
-  tasks: NonNullable<ITaskDoc>[];
   taskId: string;
 }
 

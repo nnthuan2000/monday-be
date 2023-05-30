@@ -101,8 +101,6 @@ export interface ColumnModel extends Model<IColumn, {}, IColumnMethods> {
     session,
   }: ICreateNewColumns): Promise<ICreateNewColumnsResult>;
 
-  updateAllColumnsForDelete({ columns, session }: IUpdateAllColumns): Promise<void>;
-
   updateAllColumns({ columns, session }: IUpdateAllColumns): Promise<NonNullable<IColumnDoc>[]>;
 
   deleteColumn({ boardDoc, columnId, session }: IDeleteColumn): Promise<null>;

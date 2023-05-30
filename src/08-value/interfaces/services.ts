@@ -18,9 +18,9 @@ export interface IUpdateValueByTypeParams {
   updationData: Partial<IDefaultValue>;
 }
 
-export interface ISetValueParams {
-  valueId?: string;
-  value?: string;
+export interface ISelectValueParams {
+  valueId: string | null;
+  value: string;
   tasksColumnsId: string;
 }
 

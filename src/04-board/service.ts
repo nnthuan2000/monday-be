@@ -6,7 +6,7 @@ import {
   ISearchBoardsParams,
   IUpdateBoardParams,
 } from './interfaces/services';
-import { BadRequestError } from '../root/responseHandler/error.response';
+import { NotFoundError } from '../root/responseHandler/error.response';
 import QueryTransform from '../root/utils/queryTransform';
 import { IBoard } from './interfaces/board';
 import Board from '../models/board';
@@ -31,7 +31,7 @@ export default class BoardService {
 
   static async getAllBoards({ workspaceId, fields, requestQuery }: IGetAllBoardsParams) {
     const foundWorkspace = await Workspace.findById(workspaceId);
-    if (!foundWorkspace) throw new BadRequestError('Workspace is not found');
+    if (!foundWorkspace) throw new NotFoundError('Workspace is not found');
     const boardQuery = new QueryTransform<IBoard>(
       Board.find({ _id: { $in: foundWorkspace.boards } }),
       requestQuery
@@ -86,14 +86,14 @@ export default class BoardService {
         },
       })
       .lean();
-    if (!foundBoard) throw new BadRequestError('Board is not found');
+    if (!foundBoard) throw new NotFoundError('Board is not found');
 
     return foundBoard;
   }
 
   static async createBoard({ workspaceId, userId, data }: ICreateBoardParams) {
     const foundWorkspace = await Workspace.findById(workspaceId);
-    if (!foundWorkspace) throw new BadRequestError('Workspace is not exist');
+    if (!foundWorkspace) throw new NotFoundError('Workspace is not exist');
     return await performTransaction(async (session) => {
       const createdNewBoard = await Board.createNewBoard({
         workspaceDoc: foundWorkspace,
@@ -108,7 +108,7 @@ export default class BoardService {
 
   static async updateBoard({ boardId, updationData }: IUpdateBoardParams) {
     const updatedBoard = await Board.findByIdAndUpdate(boardId, updationData, { new: true });
-    if (!updatedBoard) throw new BadRequestError('Board is not found');
+    if (!updatedBoard) throw new NotFoundError('Board is not found');
     return updatedBoard;
   }
 

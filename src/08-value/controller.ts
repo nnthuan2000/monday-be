@@ -37,7 +37,7 @@ class ValueController<T extends IRequestWithAuth> implements IFullController<T> 
   });
 
   selectValue: Fn<T> = catchAsync(async (req, res, next) => {
-    const selectedValue = await ValueService.setValue({
+    const selectedValue = await ValueService.selectValue({
       tasksColumnsId: req.params.id,
       value: req.body.value,
       valueId: req.body.valueId,

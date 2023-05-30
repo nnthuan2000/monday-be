@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import nodemailer from 'nodemailer';
 import { config, oAuth2Client } from '../root/configs';
-import { BadRequestError } from '../root/responseHandler/error.response';
+import { BadRequestError, NotFoundError } from '../root/responseHandler/error.response';
 import { getInfodata } from '../root/utils';
 import {
   IGetAndValidateUser,
@@ -38,7 +38,7 @@ export default class AccessService {
 
   static async verifyCode({ email, code }: IVerfiyCode, res: Response) {
     const foundUser = await User.findByEmail({ email });
-    if (!foundUser) throw new BadRequestError('User is not found');
+    if (!foundUser) throw new NotFoundError('User is not found');
 
     if (foundUser.code !== code) throw new BadRequestError('Code is invalid');
 
@@ -65,7 +65,7 @@ export default class AccessService {
   static async sendCodeAgain({ email }: ISendCodeAgain) {
     const foundUser = await User.findByEmail({ email });
 
-    if (!foundUser) throw new BadRequestError('User is not found');
+    if (!foundUser) throw new NotFoundError('User is not found');
 
     const { code, codeLifeTimeMinutes, expiresIn } = foundUser.generateCode();
 
@@ -148,7 +148,7 @@ export default class AccessService {
 
   static async getMe({ id }: IGetMeParams, res: Response) {
     const foundUser = await User.findById(id);
-    if (!foundUser) throw new BadRequestError('User is not exist');
+    if (!foundUser) throw new NotFoundError('User is not exist');
     return this.sendResToClient<IUserDoc>(
       {
         Doc: foundUser,
@@ -208,10 +208,10 @@ export default class AccessService {
 
   static async getAndValidateUser({ email, password }: IGetAndValidateUser) {
     const foundUser = await User.findByEmail({ email });
-    if (!foundUser) throw new BadRequestError('User is not registerd');
+    if (!foundUser) throw new NotFoundError('User is not registerd');
 
     const isCorrectPassword = foundUser.isMatchPassword(password);
-    if (!isCorrectPassword) throw new BadRequestError('User is not registered');
+    if (!isCorrectPassword) throw new BadRequestError('Password is incorrect');
     return foundUser;
   }
 }

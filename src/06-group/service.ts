@@ -1,4 +1,4 @@
-import { BadRequestError } from '../root/responseHandler/error.response';
+import { BadRequestError, NotFoundError } from '../root/responseHandler/error.response';
 import {
   ICreateGroupParams,
   IDeleteGroupParams,
@@ -43,18 +43,19 @@ export default class GroupService {
   }
 
   static async updateGroup({ groupId, updationData, session = null }: IUpdateGroupParams) {
+    if (updationData.position) throw new BadRequestError(`Can't modify position of group`);
     const updatedGroup = await Group.findByIdAndUpdate(groupId, updationData, {
       new: true,
       session,
     }).lean();
-    if (!updatedGroup) throw new BadRequestError('Group is not found');
+    if (!updatedGroup) throw new NotFoundError('Group is not found');
     return updatedGroup;
   }
 
   static async updateAllGroups({ boardId, groups }: IUpdateAllGroupsParams) {
     const foundBoard = await Board.findById(boardId).lean();
 
-    if (!foundBoard) throw new BadRequestError('Board is not founds');
+    if (!foundBoard) throw new NotFoundError('Board is not found');
 
     if (foundBoard.groups.length !== groups.length)
       throw new BadRequestError(
@@ -73,19 +74,15 @@ export default class GroupService {
     });
   }
 
-  static async deleteGroup({ boardId, groupId, groups }: IDeleteGroupParams) {
+  static async deleteGroup({ boardId, groupId }: IDeleteGroupParams) {
     const foundBoard = await Board.findById(boardId);
-    if (!foundBoard) throw new BadRequestError('Board is not found');
+    if (!foundBoard) throw new NotFoundError('Board is not found');
 
     if (foundBoard.groups.length === 1)
       throw new BadRequestError('Board has to have at least one group');
 
-    if (foundBoard.groups.length - 1 !== groups.length)
-      throw new BadRequestError('Please send all the groups when delete a column in board');
-
     return await performTransaction(async (session) => {
       await Group.deleteGroup({ boardDoc: foundBoard, groupId, session });
-      await Group.updateAllPositionGroups({ groups, session });
     });
   }
 }
