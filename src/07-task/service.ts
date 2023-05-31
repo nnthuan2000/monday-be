@@ -5,7 +5,6 @@ import { performTransaction } from '../root/utils/performTransaction';
 import {
   ICreateTaskParams,
   IDeleteAllTasksInGroup,
-  IDeleteTaskParams,
   IDeleteTasks,
   IGetTaskParams,
   IUpdateAllTasksParams,
@@ -89,15 +88,6 @@ export default class TaskService {
 
     return await performTransaction(async (session) => {
       return await Task.updateAllPositionTasks({ tasks, session });
-    });
-  }
-
-  static async deleteTask({ groupId, taskId }: IDeleteTaskParams) {
-    const foundGroup = await Group.findById(groupId);
-    if (!foundGroup) throw new NotFoundError('Group is not found');
-
-    return await performTransaction(async (session) => {
-      await Task.deleteTask({ groupDoc: foundGroup, taskId, session });
     });
   }
 

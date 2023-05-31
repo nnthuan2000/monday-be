@@ -20,11 +20,6 @@ export interface IUpdateTaskParams {
   updationData: Partial<ITask>;
 }
 
-export interface IDeleteTaskParams {
-  groupId: string;
-  taskId: string;
-}
-
 export interface IDeleteTasks {
   groupId: string;
   taskIds: string[];
