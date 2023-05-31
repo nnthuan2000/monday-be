@@ -1,10 +1,10 @@
-import { Schema } from 'mongoose';
+import { Schema, Types } from 'mongoose';
 import {
   BoardModel,
   IBoard,
+  IBoardDoc,
   IBoardMethods,
   ICreateNewBoard,
-  ICreateNewBoardResult,
   IDeleteBoard,
 } from '../04-board/interfaces/board';
 import db from '../root/db';
@@ -70,7 +70,7 @@ boardSchema.static(
     userId,
     data,
     session,
-  }: ICreateNewBoard): Promise<ICreateNewBoardResult> {
+  }: ICreateNewBoard): Promise<IBoardDoc> {
     const [createdNewBoard] = await this.insertMany(
       [
         {
@@ -120,7 +120,7 @@ boardSchema.static(
         fields: ['_id', 'name', 'position', 'tasks'],
         objects: createdNewGroups,
       }),
-    } as ICreateNewBoardResult;
+    } as IBoardDoc;
   }
 );
 
@@ -150,7 +150,7 @@ boardSchema.static(
       { session }
     );
 
-    const deleteGroupPromises = deletedBoard.groups.map((groupId) =>
+    const deleteGroupPromises = (deletedBoard.groups as Types.ObjectId[]).map((groupId) =>
       Group.deleteGroup({ groupId, session })
     );
 

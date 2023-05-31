@@ -9,8 +9,8 @@ export interface IBoard {
   description: string;
   isCreatedView: boolean;
   belongWorkspace: Types.ObjectId;
-  columns: Types.ObjectId[] | IColumnDoc[];
-  groups: Types.ObjectId[];
+  columns: Types.ObjectId[] | NonNullable<IColumnDoc>[];
+  groups: Types.ObjectId[] | NonNullable<IGroupDoc>[];
 }
 
 /////////////////////////////////////
@@ -36,11 +36,6 @@ export type IBoardDoc = Doc<IBoard, IBoardMethods>;
 export type IBoardDocObj = DocObj<IBoard>;
 
 export interface IBoardMethods {}
-
-export type ICreateNewBoardResult = NonNullable<IBoardDoc> & {
-  columns: NonNullable<IColumnDoc>[];
-  groups: NonNullable<IGroupDoc>[];
-};
 
 // For statics
 export interface BoardModel extends Model<IBoard, {}, IBoardMethods> {

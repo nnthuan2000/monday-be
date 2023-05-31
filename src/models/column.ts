@@ -16,7 +16,6 @@ import {
 import db from '../root/db';
 import Type from './type';
 import { MultipleValueTypes, SingleValueTypes } from '../05-column/constant';
-import Board from './board';
 import { BadRequestError, NotFoundError } from '../root/responseHandler/error.response';
 import TasksColumns from './tasksColumns';
 import DefaultValue from './defaultValue';
@@ -83,7 +82,7 @@ columnSchema.static(
 columnSchema.static(
   'createNewColumn',
   async function createNewColumn({
-    boardId,
+    boardDoc,
     typeId,
     userId,
     position,
@@ -93,7 +92,7 @@ columnSchema.static(
     if (!foundType) throw new NotFoundError('Type is not found');
 
     const createdNewDefaultValues = await DefaultValue.createNewDefaultValuesByColumn({
-      boardId: new Types.ObjectId(boardId),
+      boardId: boardDoc._id,
       typeDoc: foundType,
       createdBy: userId,
       session,
@@ -111,19 +110,17 @@ columnSchema.static(
       { session }
     );
 
-    const updatedBoard = await Board.findByIdAndUpdate(
-      boardId,
+    await boardDoc.updateOne(
       {
         $push: {
           columns: createdNewColumn._id,
         },
       },
-      { session }
+      { new: true, session }
     );
-    if (!updatedBoard) throw new NotFoundError('Board is not found');
 
     const tasksColumnsIds = await TasksColumns.createTasksColumnsByColumn({
-      boardDoc: updatedBoard,
+      boardDoc: boardDoc,
       columnDoc: createdNewColumn,
       defaultValues: createdNewDefaultValues,
       position,

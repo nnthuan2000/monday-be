@@ -11,7 +11,6 @@ import {
   IUpdateAllPositionGroups,
 } from '../06-group/interfaces/group';
 import db from '../root/db';
-import Board from './board';
 import { NotFoundError } from '../root/responseHandler/error.response';
 import Task from './task';
 
@@ -48,22 +47,20 @@ var groupSchema = new Schema<IGroup, GroupModel, IGroupMethods>(
 groupSchema.static(
   'createNewGroup',
   async function createNewGroup({
-    boardId,
+    boardDoc,
     data,
     session,
   }: ICreateNewGroup): Promise<NonNullable<IGroupDoc>> {
     const [createdNewGroup] = await this.create([{ ...data }], { session });
 
-    const updatedBoard = await Board.findByIdAndUpdate(
-      boardId,
+    await boardDoc.updateOne(
       {
         $push: {
           groups: createdNewGroup._id,
         },
       },
-      { session }
+      { new: true, session }
     );
-    if (!updatedBoard) throw new NotFoundError('Board is not found');
     return createdNewGroup;
   }
 );

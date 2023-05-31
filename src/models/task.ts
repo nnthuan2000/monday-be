@@ -1,4 +1,4 @@
-import { Schema } from 'mongoose';
+import { Schema, Types } from 'mongoose';
 import {
   ICreateNewTask,
   ICreateNewTasks,
@@ -77,11 +77,14 @@ taskSchema.static(
 
 taskSchema.static(
   'createNewTask',
-  async function createNewTask({ boardId, groupId, data, session }: ICreateNewTask) {
+  async function createNewTask({ boardId, groupDoc, data, session }: ICreateNewTask) {
     const foundBoard = await Board.findById(boardId, {}, { session })
       .populate({
         path: 'columns',
-        select: '_id name defaultValues',
+        select: '_id name position defaultValues',
+        options: {
+          sort: { position: 1 },
+        },
         populate: {
           path: 'defaultValues',
           select: '_id value color canEditColor',
@@ -98,16 +101,14 @@ taskSchema.static(
       session,
     })) as NonNullable<ITaskDoc>[];
 
-    const updatedGroup = await Group.findByIdAndUpdate(
-      groupId,
+    await groupDoc.updateOne(
       {
         $push: {
           tasks: createdNewTask!._id,
         },
       },
-      { session }
+      { new: true, session }
     );
-    if (!updatedGroup) throw new NotFoundError('Group is not found');
 
     const createdNewTasksColumns = await createSetOfTasksColumnsByTask({
       columns: foundBoard.columns as NonNullable<IColumnDoc>[],
@@ -257,7 +258,7 @@ taskSchema.static(
     const foundGroup = await Group.findById(groupId, {}, { session });
     if (!foundGroup) throw new NotFoundError('Group is not found');
     const deletingTaskPromises = foundGroup.tasks.map((task) =>
-      this.deleteTask({ taskId: task, session })
+      this.deleteTask({ taskId: task as Types.ObjectId, session })
     );
 
     await Promise.all(deletingTaskPromises);

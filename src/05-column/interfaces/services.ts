@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
-import { IColumn, IColumnDoc, IColumnWithId } from './column';
+import { IColumn, IColumnForCreate, IColumnWithId } from './column';
 
 export interface IGetAllTypesParams {}
 
@@ -7,13 +7,10 @@ export interface IGetAllColumnsByBoard {
   boardId: string;
 }
 
-export interface IColumnsParams {
-  columns: IColumnWithId[];
-}
-
-export interface ICreateColumnParams extends IColumnsParams {
+export interface ICreateColumnParams {
   boardId: string;
   userId: Types.ObjectId;
+  data: IColumnForCreate;
 }
 
 export interface IUpdateColumnParams {
@@ -23,7 +20,7 @@ export interface IUpdateColumnParams {
 
 export interface IUpdateAllColumnsParams {
   boardId: string;
-  columns: NonNullable<IColumnDoc>[];
+  columns: IColumnWithId[];
 }
 
 export interface IDeleteColumnParams {

@@ -1,4 +1,4 @@
-import { ITask, ITaskDoc, ITaskWithId } from './task';
+import { ITask, ITaskDoc, ITaskForCreate } from './task';
 
 export interface IGetTaskParams {
   taskId: string;
@@ -7,7 +7,7 @@ export interface IGetTaskParams {
 export interface ICreateTaskParams {
   boardId: string;
   groupId: string;
-  tasks: ITaskWithId[];
+  data: ITaskForCreate;
 }
 
 export interface IUpdateAllTasksParams {

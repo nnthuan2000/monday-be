@@ -19,30 +19,47 @@ export default class TaskService {
     return foundTask;
   }
 
-  static async createTask({ boardId, groupId, tasks }: ICreateTaskParams) {
+  static async createTask({ boardId, groupId, data }: ICreateTaskParams) {
+    const insertPosition = data.position;
     return await performTransaction(async (session) => {
-      let creatingNewTaskPromise: Promise<NonNullable<ITaskDoc>> | null = null;
-      const workingPositionTasks = tasks.map((task, index) => {
-        if (task._id) {
-          return Task.findByIdAndUpdatePosition({
-            taskId: task._id,
-            position: index,
-            session,
-          });
-        } else {
-          creatingNewTaskPromise = Task.createNewTask({
-            boardId,
-            groupId,
-            data: { ...task, position: index },
-            session,
-          });
-        }
+      const foundGroupWithTasks = await Group.findById(groupId, {}, { session }).populate({
+        path: 'tasks',
+        select: '_id position',
+        options: {
+          sort: { position: 1 },
+        },
       });
 
-      if (!creatingNewTaskPromise)
-        throw new BadRequestError('Missing some fields when create a new task');
-      workingPositionTasks.unshift(creatingNewTaskPromise);
-      const [createdNewTask] = await Promise.all(workingPositionTasks);
+      if (!foundGroupWithTasks) throw new NotFoundError('Group is not found');
+
+      if (insertPosition > foundGroupWithTasks.tasks.length)
+        throw new BadRequestError(`Invalid position ${insertPosition} to create a new task`);
+
+      let updatingTaskPromises: any = [];
+      const slicedTasks = foundGroupWithTasks.tasks.slice(insertPosition);
+      if (slicedTasks.length !== 0) {
+        updatingTaskPromises = slicedTasks.map((task, index) => {
+          return (task as NonNullable<ITaskDoc>).updateOne(
+            {
+              $set: {
+                position: insertPosition + index + 1,
+              },
+            },
+            { new: true, session }
+          );
+        });
+      }
+
+      const creatingNewTaskPromise = Task.createNewTask({
+        boardId,
+        groupDoc: foundGroupWithTasks,
+        data,
+        session,
+      });
+
+      updatingTaskPromises.unshift(creatingNewTaskPromise);
+
+      const [createdNewTask] = await Promise.all(updatingTaskPromises);
 
       return createdNewTask;
     });

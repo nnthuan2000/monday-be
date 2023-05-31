@@ -11,8 +11,14 @@ export interface ITask {
   values: Types.ObjectId[];
 }
 
-export interface ITaskWithId extends ITask {
-  _id?: string;
+export interface ITaskForCreate {
+  name: string;
+  position: number;
+}
+
+export interface ITaskWithId {
+  _id: string;
+  position: number;
 }
 
 /////////////////////////////////////
@@ -27,8 +33,8 @@ export interface IFindByIdAndUpdatePosition {
 
 export interface ICreateNewTask {
   boardId: string;
-  groupId: string;
-  data: ITask;
+  groupDoc: NonNullable<IGroupDoc>;
+  data: ITaskForCreate;
   session: ClientSession;
 }
 
@@ -79,7 +85,7 @@ export interface TaskModel extends Model<ITask, {}, ITaskMethods> {
 
   createNewTask({
     boardId,
-    groupId,
+    groupDoc,
     data,
     session,
   }: ICreateNewTask): Promise<NonNullable<ITaskDoc>>;

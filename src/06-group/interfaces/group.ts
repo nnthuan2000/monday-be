@@ -3,15 +3,22 @@ import { Doc, DocObj } from '../../root/app.interfaces';
 import { IDefaultValueDoc } from '../../08-value/interfaces/defaultValue';
 import { IColumnDoc } from '../../05-column/interfaces/column';
 import { IBoardDoc } from '../../04-board/interfaces/board';
+import { ITaskDoc } from '../../07-task/interfaces/task';
 
 export interface IGroup {
   name: string;
   position: number;
-  tasks: Types.ObjectId[];
+  tasks: Types.ObjectId[] | NonNullable<ITaskDoc>[];
 }
 
-export interface IGroupWithId extends IGroup {
-  _id?: string;
+export interface IGroupForCreate {
+  name: string;
+  position: number;
+}
+
+export interface IGroupWithId {
+  _id: string;
+  position: number;
 }
 
 /////////////////////////////////////
@@ -25,8 +32,8 @@ export interface IFindByIdAndUpdatePosition {
 }
 
 export interface ICreateNewGroup {
-  boardId: string;
-  data: IGroup;
+  boardDoc: NonNullable<IBoardDoc>;
+  data: IGroupForCreate;
   session: ClientSession;
 }
 
@@ -52,6 +59,10 @@ export interface IDeleteGroup {
 export type IGroupDoc = Doc<IGroup, IGroupMethods>;
 export type IGroupDocObj = DocObj<IGroup>;
 
+export type IGroupWithTasks = NonNullable<IGroupDoc> & {
+  tasks: NonNullable<ITaskDoc>[];
+};
+
 export interface IGroupMethods {}
 
 // For statics
@@ -62,7 +73,7 @@ export interface GroupModel extends Model<IGroup, {}, IGroupMethods> {
     session,
   }: IFindByIdAndUpdatePosition): Promise<NonNullable<IGroupDoc>>;
 
-  createNewGroup({ boardId, data, session }: ICreateNewGroup): Promise<NonNullable<IGroupDoc>>;
+  createNewGroup({ boardDoc, data, session }: ICreateNewGroup): Promise<NonNullable<IGroupDoc>>;
 
   createNewGroups({
     columns,

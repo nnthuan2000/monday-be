@@ -11,11 +11,14 @@ export interface IColumn {
   defaultValues: Types.ObjectId[];
 }
 
-export interface IColumnWithId {
-  _id?: string;
-  name: string;
+export interface IColumnForCreate {
   position: number;
   belongType: string;
+}
+
+export interface IColumnWithId {
+  _id: string;
+  position: number;
 }
 
 /////////////////////////////////////
@@ -29,7 +32,7 @@ export interface IFindByColumnAndUpdatePosition {
 }
 
 export interface ICreateNewColumn {
-  boardId: string;
+  boardDoc: NonNullable<IBoardDoc>;
   typeId: string;
   position: number;
   userId: Types.ObjectId;
@@ -54,7 +57,7 @@ export interface ICreateNewColumnResult {
 }
 
 export interface IUpdateAllColumns {
-  columns: NonNullable<IColumnDoc>[];
+  columns: IColumnWithId[];
   session: ClientSession;
 }
 
@@ -88,7 +91,7 @@ export interface ColumnModel extends Model<IColumn, {}, IColumnMethods> {
   }: IFindByColumnAndUpdatePosition): Promise<NonNullable<IColumnDoc>>;
 
   createNewColumn({
-    boardId,
+    boardDoc,
     typeId,
     userId,
     position,

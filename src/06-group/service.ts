@@ -6,38 +6,51 @@ import {
   IUpdateGroupParams,
 } from './interfaces/services';
 import { performTransaction } from '../root/utils/performTransaction';
-import { IGroupDoc } from './interfaces/group';
 import Group from '../models/group';
 import Board from '../models/board';
+import { IGroupDoc } from './interfaces/group';
 
 export default class GroupService {
-  static async createGroup({ boardId, groups }: ICreateGroupParams) {
-    let creatingNewGroupPromise: Promise<NonNullable<IGroupDoc>> | null = null;
+  static async createGroup({ boardId, data }: ICreateGroupParams) {
+    const insertPosition = data.position;
     return await performTransaction(async (session) => {
-      const workingAllGroupPromises = groups.map((group, index) => {
-        if (group._id) {
-          return Group.findByIdAndUpdatePosition({
-            groupId: group._id,
-            position: index,
-            session,
-          });
-        } else {
-          creatingNewGroupPromise = Group.createNewGroup({
-            boardId,
-            data: {
-              ...group,
-              position: index,
-            },
-            session,
-          });
-        }
+      const foundBoardWithGroups = await Board.findById(boardId, {}, { session }).populate({
+        path: 'groups',
+        select: '_id position',
+        options: {
+          sort: { position: 1 },
+        },
       });
 
-      if (!creatingNewGroupPromise)
-        throw new BadRequestError('Missing some fields when create a new group');
-      workingAllGroupPromises.unshift(creatingNewGroupPromise);
-      const [createdNewGroup] = await Promise.all(workingAllGroupPromises);
+      if (!foundBoardWithGroups) throw new NotFoundError('Board is not found');
 
+      if (insertPosition > foundBoardWithGroups.groups.length)
+        throw new BadRequestError(`Invalid position ${insertPosition} to create a new group`);
+
+      let updatingGroupPromises: any = [];
+      const slicedGroup = foundBoardWithGroups.groups.slice(insertPosition);
+      if (slicedGroup.length !== 0) {
+        updatingGroupPromises = slicedGroup.map((group, index) => {
+          return (group as NonNullable<IGroupDoc>).updateOne(
+            {
+              $set: {
+                position: insertPosition + index + 1,
+              },
+            },
+            { new: true, session }
+          );
+        });
+      }
+
+      const creatingNewGroupPromise = Group.createNewGroup({
+        boardDoc: foundBoardWithGroups,
+        data,
+        session,
+      });
+
+      updatingGroupPromises.unshift(creatingNewGroupPromise);
+
+      const [createdNewGroup] = await Promise.all(updatingGroupPromises);
       return createdNewGroup;
     });
   }

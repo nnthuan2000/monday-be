@@ -114,7 +114,7 @@ export default class ValueService {
     return await performTransaction(async (session) => {
       const deletedValue = await DefaultValue.findByIdAndDelete(defaultValueId, { session });
       if (!deletedValue) throw new NotFoundError('Value is not found');
-      if (deletedValue.canEditColor)
+      if (!deletedValue.canEditColor)
         throw new BadRequestError(`Default value of this type can't deleted`);
 
       const foundBoardWithColumns = await Board.findById(deletedValue.belongBoard).populate({

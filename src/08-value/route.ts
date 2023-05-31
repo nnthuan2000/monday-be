@@ -5,7 +5,7 @@ const valueRouter = Router();
 
 valueRouter.patch('/values/:id', valueController.updateOne as any);
 
-valueRouter.delete('/columns/:columnId/values/:id', valueController.deleteOne as any);
+valueRouter.delete('/column/:columnId/values/:id', valueController.deleteOne as any);
 
 valueRouter
   .route('/board/:boardId/column/:columnId/values')

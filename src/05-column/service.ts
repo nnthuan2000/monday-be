@@ -3,7 +3,7 @@ import Column from '../models/column';
 import Type from '../models/type';
 import { BadRequestError, NotFoundError } from '../root/responseHandler/error.response';
 import { performTransaction } from '../root/utils/performTransaction';
-import { ICreateNewColumnResult } from './interfaces/column';
+import { IColumnDoc } from './interfaces/column';
 import { ICreateColumnResult } from './interfaces/controller';
 import {
   ICreateColumnParams,
@@ -21,33 +21,49 @@ export default class ColumnService {
   static async createColumn({
     boardId,
     userId,
-    columns,
+    data,
   }: ICreateColumnParams): Promise<ICreateColumnResult> {
+    const insertPosition = data.position;
     return await performTransaction<ICreateColumnResult>(async (session) => {
-      let creatingNewColumnInfoPromise: Promise<ICreateNewColumnResult> | null = null;
-      const workingColumnPromises = columns.map((column, index) => {
-        if (column._id) {
-          return Column.findByIdAndUpdatePosition({
-            columnId: column._id,
-            position: index,
-            session,
-          });
-        } else {
-          creatingNewColumnInfoPromise = Column.createNewColumn({
-            boardId,
-            typeId: column.belongType,
-            position: index,
-            userId,
-            session,
-          });
-        }
+      const foundBoardWithColumns = await Board.findById(boardId, {}, { session }).populate({
+        path: 'columns',
+        select: '_id position',
+        options: {
+          sort: { position: 1 },
+        },
       });
-      if (!creatingNewColumnInfoPromise)
-        throw new BadRequestError('Missing some fields when create a new column');
-      workingColumnPromises.unshift(creatingNewColumnInfoPromise);
 
-      const [createdNewColumnInfo] = await Promise.all(workingColumnPromises);
-      return createdNewColumnInfo;
+      if (!foundBoardWithColumns) throw new NotFoundError('Board is not found');
+      if (insertPosition > foundBoardWithColumns.columns.length)
+        throw new BadRequestError(`Invalid position ${insertPosition} to create a new column`);
+
+      let updatingColumnPromises: any = [];
+      const slicedColumns = foundBoardWithColumns.columns.slice(insertPosition);
+      if (slicedColumns.length !== 0) {
+        updatingColumnPromises = slicedColumns.map((column, index) => {
+          return (column as NonNullable<IColumnDoc>).updateOne(
+            {
+              $set: {
+                position: insertPosition + index + 1,
+              },
+            },
+            { new: true, session }
+          );
+        });
+      }
+
+      const creatingColumnPromise = Column.createNewColumn({
+        boardDoc: foundBoardWithColumns,
+        typeId: data.belongType,
+        position: insertPosition,
+        userId: userId,
+        session,
+      });
+
+      updatingColumnPromises.unshift(creatingColumnPromise);
+
+      const [createdNewColumn] = await Promise.all(updatingColumnPromises);
+      return createdNewColumn;
     });
   }
 
