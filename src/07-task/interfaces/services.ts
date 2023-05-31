@@ -25,6 +25,11 @@ export interface IDeleteTaskParams {
   taskId: string;
 }
 
-export interface IDeleteAllTasksParams {
+export interface IDeleteTasks {
+  groupId: string;
+  taskIds: string[];
+}
+
+export interface IDeleteAllTasksInGroup {
   groupId: string;
 }

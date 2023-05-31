@@ -62,7 +62,7 @@ export interface IDeleteTask {
   session: ClientSession;
 }
 
-export interface IDeleteAllTasks {
+export interface IDeleteAllTasksInGroup {
   groupId: string;
   session: ClientSession;
 }
@@ -108,5 +108,5 @@ export interface TaskModel extends Model<ITask, {}, ITaskMethods> {
   }: IUpdateAllPositionsInValue): Promise<null>;
   deleteTask({ groupDoc, taskId, session }: IDeleteTask): Promise<null>;
 
-  deleteAllTasks({ groupId, session }: IDeleteAllTasks): Promise<null>;
+  deleteAllTasks({ groupId, session }: IDeleteAllTasksInGroup): Promise<null>;
 }

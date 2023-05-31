@@ -4,5 +4,5 @@ import { Fn } from '../../root/utils/catchAsync';
 
 export interface ITaskController<T extends Request> extends IFullController<T> {
   updateAllTasks: Fn<T>;
-  deleteAllTasks: Fn<T>;
+  deleteAllTasksInGroup: Fn<T>;
 }

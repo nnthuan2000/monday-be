@@ -2,7 +2,7 @@ import { Schema, Types } from 'mongoose';
 import {
   ICreateNewTask,
   ICreateNewTasks,
-  IDeleteAllTasks,
+  IDeleteAllTasksInGroup,
   IDeleteTask,
   IFindByIdAndUpdatePosition,
   ITask,
@@ -254,7 +254,7 @@ taskSchema.static(
 
 taskSchema.static(
   'deleteAllTasks',
-  async function deleteAllTasks({ groupId, session }: IDeleteAllTasks) {
+  async function deleteAllTasks({ groupId, session }: IDeleteAllTasksInGroup) {
     const foundGroup = await Group.findById(groupId, {}, { session });
     if (!foundGroup) throw new NotFoundError('Group is not found');
     const deletingTaskPromises = foundGroup.tasks.map((task) =>

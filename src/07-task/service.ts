@@ -4,8 +4,9 @@ import { BadRequestError, NotFoundError } from '../root/responseHandler/error.re
 import { performTransaction } from '../root/utils/performTransaction';
 import {
   ICreateTaskParams,
-  IDeleteAllTasksParams,
+  IDeleteAllTasksInGroup,
   IDeleteTaskParams,
+  IDeleteTasks,
   IGetTaskParams,
   IUpdateAllTasksParams,
   IUpdateTaskParams,
@@ -100,7 +101,19 @@ export default class TaskService {
     });
   }
 
-  static async deleteAllTasks({ groupId }: IDeleteAllTasksParams) {
+  static async deleteTasks({ groupId, taskIds }: IDeleteTasks) {
+    const foundGroup = await Group.findById(groupId);
+    if (!foundGroup) throw new NotFoundError('Group is not found');
+
+    return await performTransaction(async (session) => {
+      const deletingTaskPromises = taskIds.map((taskId) =>
+        Task.deleteTask({ groupDoc: foundGroup, taskId, session })
+      );
+      await Promise.all(deletingTaskPromises);
+    });
+  }
+
+  static async deleteAllTasksInGroup({ groupId }: IDeleteAllTasksInGroup) {
     return await performTransaction(async (session) => {
       await Task.deleteAllTasks({ groupId, session });
     });

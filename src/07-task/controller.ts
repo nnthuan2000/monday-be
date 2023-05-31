@@ -76,8 +76,23 @@ class TaskController<T extends IRequestWithAuth> implements ITaskController<T> {
     }).send(res);
   });
 
-  deleteAllTasks: Fn<T> = catchAsync(async (req, res, next) => {
-    await TaskService.deleteAllTasks({
+  deleteTasks: Fn<T> = catchAsync(async (req, res, next) => {
+    const { ids } = req.query;
+    if (!ids) throw new BadRequestError('Missing some fields to delete tasks');
+    const taskIds = (ids as string).split(',');
+    await TaskService.deleteTasks({
+      groupId: req.params.groupId,
+      taskIds,
+    });
+
+    new OK({
+      message: 'Delete tasks successfully',
+      metadata: null,
+    }).send(res);
+  });
+
+  deleteAllTasksInGroup: Fn<T> = catchAsync(async (req, res, next) => {
+    await TaskService.deleteAllTasksInGroup({
       groupId: req.params.groupId,
     });
     new OK({

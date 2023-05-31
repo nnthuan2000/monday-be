@@ -13,6 +13,6 @@ taskRouter.patch('/group/:groupId/alltasks', taskController.updateAllTasks as an
 
 taskRouter.delete('/group/:groupId/task/:id', taskController.deleteOne as any);
 
-taskRouter.delete('/group/:groupId/alltasks', taskController.deleteAllTasks as any);
+taskRouter.delete('/group/:groupId/alltasks', taskController.deleteAllTasksInGroup as any);
 
 export default taskRouter;
