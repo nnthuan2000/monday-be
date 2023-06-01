@@ -39,18 +39,16 @@ export default class ColumnService {
 
       let updatingColumnPromises: any = [];
       const slicedColumns = foundBoardWithColumns.columns.slice(insertPosition);
-      if (slicedColumns.length !== 0) {
-        updatingColumnPromises = slicedColumns.map((column, index) => {
-          return (column as NonNullable<IColumnDoc>).updateOne(
-            {
-              $set: {
-                position: insertPosition + index + 1,
-              },
+      updatingColumnPromises = slicedColumns.map((column, index) => {
+        return (column as NonNullable<IColumnDoc>).updateOne(
+          {
+            $set: {
+              position: insertPosition + index + 1,
             },
-            { new: true, session }
-          );
-        });
-      }
+          },
+          { new: true, session }
+        );
+      });
 
       const creatingColumnPromise = Column.createNewColumn({
         boardDoc: foundBoardWithColumns,
