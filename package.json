@@ -7,7 +7,7 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "start": "set NODE_OPTIONS=--max-old-space-size=4096&& nodemon ./src/server.ts",
+    "start": "nodemon ./src/server.ts",
     "import": "set STATUS=import&& ts-node ./src/root/helpers/importDataTypes.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
