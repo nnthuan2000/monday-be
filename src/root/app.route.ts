@@ -8,7 +8,6 @@ import groupRouter from '../06-group/route';
 import taskRouter from '../07-task/route';
 import valueRouter from '../08-value/route';
 import imageRouter from '../09-images/route';
-import accessController from '../02-authentication/conttoller';
 
 const router = Router();
 
@@ -20,9 +19,6 @@ router.use('/auth', accessRouter);
 
 // router.use(authenticate as any);
 router.use(authenticateV2 as any);
-
-router.get('/auth/me', accessController.getMe as any);
-router.post('/auth/logout', accessController.logout as any);
 
 //* Workspace
 router.use('', workspaceRouter);
