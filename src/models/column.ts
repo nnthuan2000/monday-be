@@ -88,7 +88,7 @@ columnSchema.static(
     position,
     session,
   }: ICreateNewColumn): Promise<ICreateNewColumnResult> {
-    const foundType = await Type.findById(typeId, {}, { session });
+    const foundType = await Type.findById(typeId, {}, { session }).select('_id name icon color');
     if (!foundType) throw new NotFoundError('Type is not found');
 
     const createdNewDefaultValues = await DefaultValue.createNewDefaultValuesByColumn({
@@ -119,7 +119,7 @@ columnSchema.static(
       { new: true, session }
     );
 
-    const tasksColumnsIds = await TasksColumns.createTasksColumnsByColumn({
+    const tasksColumns = await TasksColumns.createTasksColumnsByColumn({
       boardDoc: boardDoc,
       columnDoc: createdNewColumn,
       defaultValues: createdNewDefaultValues,
@@ -127,10 +127,12 @@ columnSchema.static(
       session,
     });
 
+    createdNewColumn.defaultValues = createdNewDefaultValues;
+    createdNewColumn.belongType = foundType
+
     return {
       createdNewColumn,
-      defaultValues: createdNewDefaultValues,
-      tasksColumnsIds,
+      tasksColumns,
     };
   }
 );

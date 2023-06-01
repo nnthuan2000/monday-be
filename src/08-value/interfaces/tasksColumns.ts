@@ -54,7 +54,7 @@ export interface TasksColumnsModel extends Model<ITasksColumns, {}, ITasksColumn
     defaultValues,
     position,
     session,
-  }: ICreateTasksColumnsByColumn): Promise<Types.ObjectId[]>;
+  }: ICreateTasksColumnsByColumn): Promise<NonNullable<ITasksColumnsDoc>[]>;
   deleteTasksColumnsByColumn({
     tasksColumnsDoc,
     session,

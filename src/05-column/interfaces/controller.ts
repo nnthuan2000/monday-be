@@ -3,7 +3,7 @@ import { Fn } from '../../root/utils/catchAsync';
 import { IControllerWithoutGet } from '../../root/app.interfaces';
 import { IColumnDoc } from './column';
 import { IDefaultValueDoc } from '../../08-value/interfaces/defaultValue';
-import { Types } from 'mongoose';
+import { ITasksColumnsDoc } from '../../08-value/interfaces/tasksColumns';
 
 export interface IColumnController<T extends Request> extends IControllerWithoutGet<T> {
   getAllTypes: Fn<T>;
@@ -13,5 +13,5 @@ export interface IColumnController<T extends Request> extends IControllerWithout
 export interface ICreateColumnResult {
   createdNewColumn: NonNullable<IColumnDoc>;
   defaultValues: NonNullable<IDefaultValueDoc>[];
-  tasksColumnsIds: Types.ObjectId[];
+  tasksColumns: NonNullable<ITasksColumnsDoc>[];
 }

@@ -133,7 +133,11 @@ export const createSetOfTasksColumnsByColumn = async ({
         },
       },
     },
-    { session }
+    { new: true, session }
   );
-  return createdNewTasksColumns._id;
+
+  return await createdNewTasksColumns.populate({
+    path: 'valueId',
+    select: '_id value color',
+  });
 };

@@ -3,12 +3,13 @@ import { Doc, DocObj } from '../../root/app.interfaces';
 import { ITypeDoc } from './type';
 import { IDefaultValueDoc } from '../../08-value/interfaces/defaultValue';
 import { IBoardDoc } from '../../04-board/interfaces/board';
+import { ITasksColumnsDoc } from '../../08-value/interfaces/tasksColumns';
 
 export interface IColumn {
   name: string;
   position: number;
-  belongType: Types.ObjectId;
-  defaultValues: Types.ObjectId[];
+  belongType: Types.ObjectId | NonNullable<ITypeDoc>;
+  defaultValues: Types.ObjectId[] | NonNullable<IDefaultValueDoc>[];
 }
 
 export interface IColumnForCreate {
@@ -52,8 +53,7 @@ export interface ICreateNewColumnsResult {
 
 export interface ICreateNewColumnResult {
   createdNewColumn: NonNullable<IColumnDoc>;
-  defaultValues: NonNullable<IDefaultValueDoc>[];
-  tasksColumnsIds: Types.ObjectId[];
+  tasksColumns: NonNullable<ITasksColumnsDoc>[];
 }
 
 export interface IUpdateAllColumns {
