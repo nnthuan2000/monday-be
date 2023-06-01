@@ -37,18 +37,16 @@ export default class TaskService {
 
       let updatingTaskPromises: any = [];
       const slicedTasks = foundGroupWithTasks.tasks.slice(insertPosition);
-      if (slicedTasks.length !== 0) {
-        updatingTaskPromises = slicedTasks.map((task, index) => {
-          return (task as NonNullable<ITaskDoc>).updateOne(
-            {
-              $set: {
-                position: insertPosition + index + 1,
-              },
+      updatingTaskPromises = slicedTasks.map((task, index) => {
+        return (task as NonNullable<ITaskDoc>).updateOne(
+          {
+            $set: {
+              position: insertPosition + index + 1,
             },
-            { new: true, session }
-          );
-        });
-      }
+          },
+          { new: true, session }
+        );
+      });
 
       const creatingNewTaskPromise = Task.createNewTask({
         boardId,

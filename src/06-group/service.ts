@@ -28,19 +28,17 @@ export default class GroupService {
         throw new BadRequestError(`Invalid position ${insertPosition} to create a new group`);
 
       let updatingGroupPromises: any = [];
-      const slicedGroup = foundBoardWithGroups.groups.slice(insertPosition);
-      if (slicedGroup.length !== 0) {
-        updatingGroupPromises = slicedGroup.map((group, index) => {
-          return (group as NonNullable<IGroupDoc>).updateOne(
-            {
-              $set: {
-                position: insertPosition + index + 1,
-              },
+      const slicedGroups = foundBoardWithGroups.groups.slice(insertPosition);
+      updatingGroupPromises = slicedGroups.map((group, index) => {
+        return (group as NonNullable<IGroupDoc>).updateOne(
+          {
+            $set: {
+              position: insertPosition + index + 1,
             },
-            { new: true, session }
-          );
-        });
-      }
+          },
+          { new: true, session }
+        );
+      });
 
       const creatingNewGroupPromise = Group.createNewGroup({
         boardDoc: foundBoardWithGroups,

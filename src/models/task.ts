@@ -234,11 +234,13 @@ taskSchema.static(
         { session }
       ).sort({ position: 1 });
 
-      const updatingPositionAllTasksPromises = foundAllTasksInGroup.map((task, index) =>
+      const slicedTasks = foundAllTasksInGroup.slice(deletedTask.position);
+
+      const updatingPositionAllTasksPromises = slicedTasks.map((task, index) =>
         task.updateOne(
           {
             $set: {
-              position: index,
+              position: deletedTask.position + index,
             },
           },
           { session }

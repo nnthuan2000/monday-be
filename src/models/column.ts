@@ -257,11 +257,13 @@ columnSchema.static(
       { session }
     ).sort({ position: 1 });
 
-    const updatingPositionAllColumnsPromises = foundAllColumnsInBoard.map((column, index) =>
+    const slicedColumns = foundAllColumnsInBoard.slice(deletedColumn.position);
+
+    const updatingPositionAllColumnsPromises = slicedColumns.map((column, index) =>
       column.updateOne(
         {
           $set: {
-            position: index,
+            position: deletedColumn.position + index,
           },
         },
         { session }

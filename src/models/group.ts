@@ -171,11 +171,13 @@ groupSchema.static(
         { session }
       ).sort({ position: 1 });
 
-      const updatingPositionAllGroupsPromises = foundAllGroupsInBoard.map((group, index) =>
+      const slicedGroups = foundAllGroupsInBoard.slice(deletedGroup.position);
+
+      const updatingPositionAllGroupsPromises = slicedGroups.map((group, index) =>
         group.updateOne(
           {
             $set: {
-              position: index,
+              position: deletedGroup.position + index,
             },
           },
           { session }
