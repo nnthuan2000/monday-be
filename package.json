@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "start": "set NODE_OPTIONS=--max-old-space-size=4096&& nodemon ./src/server.ts",
     "import": "set STATUS=import&& ts-node ./src/root/helpers/importDataTypes.ts",

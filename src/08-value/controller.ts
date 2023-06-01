@@ -1,4 +1,5 @@
 import { IFullController, IRequestWithAuth } from '../root/app.interfaces';
+import { BadRequestError } from '../root/responseHandler/error.response';
 import { CREATED, OK } from '../root/responseHandler/success.response';
 import { Fn, catchAsync } from '../root/utils/catchAsync';
 import ValueService from './service';
@@ -37,6 +38,11 @@ class ValueController<T extends IRequestWithAuth> implements IFullController<T> 
   });
 
   selectValue: Fn<T> = catchAsync(async (req, res, next) => {
+    const data = req.body as object;
+    if (!data.hasOwnProperty('value') || !data.hasOwnProperty('valueId')) {
+      throw new BadRequestError('Missing some fields');
+    }
+
     const selectedValue = await ValueService.selectValue({
       tasksColumnsId: req.params.id,
       value: req.body.value,
