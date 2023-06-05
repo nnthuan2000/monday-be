@@ -11,6 +11,8 @@ export const authenticate = catchAsync<IRequestWithAuth>(async (req, res, next) 
     //TODO 1: Get accessToken from cookies
     // const accessTokenWithBearer = req.headers[HEADER.AUTHORIZATION] as string;
     // if (!accessTokenWithBearer) throw new AuthFailureError('Invalid request');
+    const userId = req.headers['client-id'];
+    if (!userId) throw new AuthFailureError(`Id's user is missing in header request`);
 
     // const accessToken = accessTokenWithBearer.split(' ')[1];
     // if (!accessToken) throw new AuthFailureError('Invalid request');
@@ -20,6 +22,8 @@ export const authenticate = catchAsync<IRequestWithAuth>(async (req, res, next) 
 
     //TODO 2: Decode token
     const decoded = jwt.verify(accessToken, process.env.SECRET_KEY!) as Payload;
+
+    if (decoded.userId !== userId) throw new AuthFailureError('Invalid userId');
 
     const foundUser = await User.findById(decoded.userId);
     if (!foundUser)
@@ -49,8 +53,14 @@ export const authenticate = catchAsync<IRequestWithAuth>(async (req, res, next) 
 export const authenticateV2 = catchAsync<IRequestWithAuth>(async (req, res, next) => {
   passport.authenticate('jwt', { session: false }, function (err: Error, user: IUserDoc) {
     if (err) return next(err);
+
     if (!user)
       throw new AuthFailureError('This user is not belong this token! Please log in again');
+
+    const userId = req.headers['client-id'];
+    if (!userId) throw new AuthFailureError(`Id's user is missing in header request`);
+    if (user._id.toString() !== userId) throw new AuthFailureError('Invalid userId');
+
     req.user = user;
     next();
   })(req, res, next);

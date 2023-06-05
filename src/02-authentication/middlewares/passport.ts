@@ -2,11 +2,12 @@ import { Request } from 'express';
 import { Strategy, StrategyOptions } from 'passport-jwt';
 import { PassportStatic } from 'passport';
 import User from '../../models/user';
+import { Tokens } from '../constant';
 
 const cookieExtractor = function (req: Request) {
   let token = null;
   if (req && req.cookies) {
-    token = req.cookies['accessToken'];
+    token = req.cookies[Tokens.ACCESS_TOKEN];
   }
   return token;
 };
