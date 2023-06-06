@@ -1,8 +1,6 @@
 import { Types } from 'mongoose';
 import { IColumn, IColumnForCreate, IColumnWithId } from './column';
 
-export interface IGetAllTypesParams {}
-
 export interface IGetAllColumnsByBoard {
   boardId: string;
 }

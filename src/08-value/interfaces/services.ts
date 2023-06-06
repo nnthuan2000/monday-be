@@ -1,11 +1,6 @@
 import { Types } from 'mongoose';
 import { IDefaultValue } from './defaultValue';
 
-export interface IGetAllValuesByTypeParams {
-  boardId: string;
-  columnId: string;
-}
-
 export interface ICreateValueByTypeParams {
   boardId: string;
   columnId: string;

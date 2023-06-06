@@ -3,10 +3,7 @@ import boardController from './controller';
 
 const boardRouter = Router();
 
-boardRouter
-  .route('/workspace/:workspaceId/board')
-  .get(boardController.getAll as any)
-  .post(boardController.createOne as any);
+boardRouter.post('/workspace/:workspaceId/board', boardController.createOne as any);
 
 boardRouter
   .route('/board/:id')

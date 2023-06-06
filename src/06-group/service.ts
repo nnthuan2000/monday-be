@@ -9,9 +9,13 @@ import { performTransaction } from '../root/utils/performTransaction';
 import Group from '../models/group';
 import Board from '../models/board';
 import { IGroupDoc } from './interfaces/group';
+import validator from 'validator';
 
 export default class GroupService {
   static async createGroup({ boardId, data }: ICreateGroupParams) {
+    if (!validator.isMongoId(boardId)) throw new BadRequestError(`Board Id: ${boardId} is invalid`);
+    if (!(data.hasOwnProperty('name') && data.hasOwnProperty('position')))
+      throw new BadRequestError('Missing some fields to create a new group');
     const insertPosition = data.position;
     return await performTransaction(async (session) => {
       const foundBoardWithGroups = await Board.findById(boardId, {}, { session }).populate({
@@ -54,6 +58,7 @@ export default class GroupService {
   }
 
   static async updateGroup({ groupId, updationData, session = null }: IUpdateGroupParams) {
+    if (!validator.isMongoId(groupId)) throw new BadRequestError(`Group Id: ${groupId} is invalid`);
     if (updationData.position) throw new BadRequestError(`Can't modify position of group`);
     const updatedGroup = await Group.findByIdAndUpdate(groupId, updationData, {
       new: true,
@@ -64,6 +69,8 @@ export default class GroupService {
   }
 
   static async updateAllGroups({ boardId, groups }: IUpdateAllGroupsParams) {
+    if (!validator.isMongoId(boardId)) throw new BadRequestError(`Board Id: ${boardId} is invalid`);
+
     const foundBoard = await Board.findById(boardId).lean();
 
     if (!foundBoard) throw new NotFoundError('Board is not found');
@@ -86,12 +93,14 @@ export default class GroupService {
   }
 
   static async deleteGroup({ boardId, groupId }: IDeleteGroupParams) {
+    if (!validator.isMongoId(boardId)) throw new BadRequestError(`Board Id: ${boardId} is invalid`);
     const foundBoard = await Board.findById(boardId);
     if (!foundBoard) throw new NotFoundError('Board is not found');
 
     if (foundBoard.groups.length === 1)
       throw new BadRequestError('Board has to have at least one group');
 
+    if (!validator.isMongoId(groupId)) throw new BadRequestError(`Group Id: ${groupId} is invalid`);
     return await performTransaction(async (session) => {
       await Group.deleteGroup({ boardDoc: foundBoard, groupId, session });
     });

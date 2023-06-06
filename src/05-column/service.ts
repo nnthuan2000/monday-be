@@ -1,6 +1,6 @@
+import validator from 'validator';
 import Board from '../models/board';
 import Column from '../models/column';
-import Type from '../models/type';
 import { BadRequestError, NotFoundError } from '../root/responseHandler/error.response';
 import { performTransaction } from '../root/utils/performTransaction';
 import { IColumnDoc } from './interfaces/column';
@@ -11,11 +11,11 @@ import {
   IUpdateAllColumnsParams,
   IUpdateColumnParams,
 } from './interfaces/services';
+import Type from '../models/type';
 
 export default class ColumnService {
   static async getAllTypes() {
-    const foundAllTypes = await Type.find({}).lean();
-    return foundAllTypes;
+    return await Type.find({}).lean();
   }
 
   static async createColumn({
@@ -23,6 +23,12 @@ export default class ColumnService {
     userId,
     data,
   }: ICreateColumnParams): Promise<ICreateColumnResult> {
+    if (!validator.isMongoId(boardId)) throw new BadRequestError(`Board Id: ${boardId} is invalid`);
+    if (!(data.hasOwnProperty('belongType') && data.hasOwnProperty('position')))
+      throw new BadRequestError('Missing some fields to create a new column');
+    if (!validator.isMongoId(data.belongType))
+      throw new BadRequestError(`Type Id: ${data.belongType} is invalid`);
+
     const insertPosition = data.position;
     return await performTransaction<ICreateColumnResult>(async (session) => {
       const foundBoardWithColumns = await Board.findById(boardId, {}, { session }).populate({
@@ -66,6 +72,9 @@ export default class ColumnService {
   }
 
   static async updateColumn({ columnId, updationData }: IUpdateColumnParams) {
+    if (!validator.isMongoId(columnId))
+      throw new BadRequestError(`Column Id: ${columnId} is invalid`);
+
     if (updationData.belongType) throw new BadRequestError(`Column can't change type`);
     if (updationData.position) throw new BadRequestError(`Can't modify position of column`);
     const updatedColumn = await Column.findByIdAndUpdate(columnId, updationData, {
@@ -76,6 +85,8 @@ export default class ColumnService {
   }
 
   static async updateAllColumns({ boardId, columns }: IUpdateAllColumnsParams) {
+    if (!validator.isMongoId(boardId)) throw new BadRequestError(`Board Id: ${boardId} is invalid`);
+
     const foundBoard = await Board.findById(boardId).lean();
 
     if (!foundBoard) throw new NotFoundError('Board is not found');
@@ -101,8 +112,13 @@ export default class ColumnService {
   }
 
   static async deleteColumn({ boardId, columnId }: IDeleteColumnParams) {
+    if (!validator.isMongoId(boardId)) throw new BadRequestError(`Board Id: ${boardId} is invalid`);
+
     const foundBoard = await Board.findById(boardId);
     if (!foundBoard) throw new NotFoundError('Board is not found');
+
+    if (!validator.isMongoId(columnId))
+      throw new BadRequestError(`Column Id: ${columnId} is invalid`);
 
     return await performTransaction(async (session) => {
       await Column.deleteColumn({

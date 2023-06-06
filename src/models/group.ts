@@ -11,8 +11,9 @@ import {
   IUpdateAllPositionGroups,
 } from '../06-group/interfaces/group';
 import db from '../root/db';
-import { NotFoundError } from '../root/responseHandler/error.response';
+import { BadRequestError, NotFoundError } from '../root/responseHandler/error.response';
 import Task from './task';
+import validator from 'validator';
 
 const DOCUMENT_NAME = 'Group';
 const COLLECTION_NAME = 'Groups';
@@ -135,13 +136,15 @@ groupSchema.static(
     groups,
     session,
   }: IUpdateAllPositionGroups): Promise<NonNullable<IGroupDoc>[]> {
-    const updatingGroupPromises = groups.map((group, index) =>
-      this.findByIdAndUpdatePosition({
+    const updatingGroupPromises = groups.map((group, index) => {
+      if (!validator.isMongoId(group._id.toString()))
+        throw new BadRequestError(`Group Id: ${group._id} is invalid`);
+      return this.findByIdAndUpdatePosition({
         groupId: group._id,
         position: index,
         session,
-      })
-    );
+      });
+    });
 
     return await Promise.all(updatingGroupPromises);
   }

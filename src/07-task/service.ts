@@ -1,3 +1,4 @@
+import validator from 'validator';
 import Group from '../models/group';
 import Task from '../models/task';
 import { BadRequestError, NotFoundError } from '../root/responseHandler/error.response';
@@ -14,12 +15,19 @@ import { ITaskDoc } from './interfaces/task';
 
 export default class TaskService {
   static async getTask({ taskId }: IGetTaskParams) {
+    if (!validator.isMongoId(taskId)) throw new BadRequestError(`Task Id: ${taskId} is invalid`);
+
     const foundTask = await Task.findById(taskId).lean();
     if (!foundTask) throw new NotFoundError('Task is not found');
     return foundTask;
   }
 
   static async createTask({ boardId, groupId, data }: ICreateTaskParams) {
+    if (!validator.isMongoId(boardId)) throw new BadRequestError(`Board Id: ${boardId} is invalid`);
+    if (!validator.isMongoId(groupId)) throw new BadRequestError(`Group Id: ${groupId} is invalid`);
+    if (!(data.hasOwnProperty('name') && data.hasOwnProperty('position')))
+      throw new BadRequestError('Missing some fields to create a new task');
+
     const insertPosition = data.position;
     return await performTransaction(async (session) => {
       const foundGroupWithTasks = await Group.findById(groupId, {}, { session }).populate({
@@ -64,6 +72,8 @@ export default class TaskService {
   }
 
   static async updateTask({ taskId, updationData }: IUpdateTaskParams) {
+    if (!validator.isMongoId(taskId)) throw new BadRequestError(`Task Id: ${taskId} is invalid`);
+
     if (updationData.position) throw new BadRequestError(`Can't modify position of task`);
     const updatedTask = await Task.findByIdAndUpdate(taskId, updationData, { new: true }).lean();
     if (!updatedTask) throw new NotFoundError('Task is not found');
@@ -71,6 +81,8 @@ export default class TaskService {
   }
 
   static async updateAllTasks({ groupId, tasks }: IUpdateAllTasksParams) {
+    if (!validator.isMongoId(groupId)) throw new BadRequestError(`Group Id: ${groupId} is invalid`);
+
     const foundGroup = await Group.findById(groupId);
     if (!foundGroup) throw new NotFoundError('Group is not found');
 
@@ -90,6 +102,8 @@ export default class TaskService {
   }
 
   static async deleteTasks({ groupId, taskIds }: IDeleteTasks) {
+    if (!validator.isMongoId(groupId)) throw new BadRequestError(`Group Id: ${groupId} is invalid`);
+
     const foundGroup = await Group.findById(groupId);
     if (!foundGroup) throw new NotFoundError('Group is not found');
 
@@ -102,6 +116,8 @@ export default class TaskService {
   }
 
   static async deleteAllTasksInGroup({ groupId }: IDeleteAllTasksInGroup) {
+    if (!validator.isMongoId(groupId)) throw new BadRequestError(`Group Id: ${groupId} is invalid`);
+
     return await performTransaction(async (session) => {
       await Task.deleteAllTasks({ groupId, session });
     });

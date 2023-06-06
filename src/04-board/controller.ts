@@ -1,4 +1,4 @@
-import { IRequestQuery, IRequestWithAuth } from '../root/app.interfaces';
+import { IRequestWithAuth } from '../root/app.interfaces';
 import { CREATED, OK } from '../root/responseHandler/success.response';
 import { Fn, catchAsync } from '../root/utils/catchAsync';
 import BoardService from './service';
@@ -15,20 +15,7 @@ class BoardController<T extends IRequestWithAuth> implements IBoardController<T>
     }).send(res);
   });
 
-  getAll: Fn<T> = catchAsync(async (req, res, next) => {
-    const foundBoards = await BoardService.getAllBoards({
-      workspaceId: req.params.workspaceId,
-      fields: '_id name belongWorkspace',
-      requestQuery: req.query as IRequestQuery,
-    });
-
-    new OK({
-      message: 'Get boards successfully',
-      metadata: {
-        boards: foundBoards,
-      },
-    }).send(res);
-  });
+  getAll: Fn<T> = catchAsync(async (req, res, next) => {});
 
   getOne: Fn<T> = catchAsync(async (req, res, next) => {
     const foundBoard = await BoardService.getBoard({ boardId: req.params.id });

@@ -1,7 +1,7 @@
 export enum MultipleValueTypes {
-  STATUS = 'status',
-  PRIORITY = 'priority',
-  LABEL = 'label',
+  STATUS = 'Status',
+  PRIORITY = 'Priority',
+  LABEL = 'Label',
 }
 
 export const multipleValueTypes = {
@@ -23,9 +23,9 @@ export const multipleValueTypes = {
 };
 
 export enum SingleValueTypes {
-  DATE = 'date',
-  NUMBER = 'number',
-  TEXT = 'text',
+  DATE = 'Date',
+  NUMBER = 'Number',
+  TEXT = 'Text',
 }
 
 export const singleValueTypes = {

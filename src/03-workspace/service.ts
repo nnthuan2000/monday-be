@@ -12,6 +12,7 @@ import {
 import QueryTransform from '../root/utils/queryTransform';
 import { IWorkspace } from './interfaces/workspace';
 import Workspace from '../models/workspace';
+import validator from 'validator';
 
 export default class WorkspaceService {
   static async searchWorkspace({ keyString }: ISearchWorkspaceParams) {
@@ -55,6 +56,8 @@ export default class WorkspaceService {
   }
 
   static async getWorkspace({ workspaceId }: IGetWorkspaceParams) {
+    if (!validator.isMongoId(workspaceId))
+      throw new BadRequestError(`Workspace Id: ${workspaceId} is invalid`);
     const foundWorkspace = await Workspace.findById(workspaceId)
       .populate({
         path: 'boards',
@@ -72,12 +75,16 @@ export default class WorkspaceService {
 
   static async createWorkspace({ userId, data }: ICreateWorkspaceParams) {
     if (data.isMain) throw new BadRequestError(`Can't not create more main workspace`);
+    if (!data.name)
+      throw new BadRequestError('Missing name of workspace to create a new workspace');
     const createdNewWorkspace = await Workspace.create({ ...data, createdBy: userId._id });
 
     return createdNewWorkspace;
   }
 
   static async updateWorkspace({ workspaceId, updationData }: IUpdateWorkspaceParams) {
+    if (!validator.isMongoId(workspaceId))
+      throw new BadRequestError(`Workspace Id: ${workspaceId} is invalid`);
     if (updationData.isMain) throw new BadRequestError(`Can't modify isMain property`);
     const updatedWorkspace = await Workspace.findByIdAndUpdate(workspaceId, updationData, {
       new: true,
@@ -87,6 +94,8 @@ export default class WorkspaceService {
   }
 
   static async deleteWorkspace({ workspaceId }: IDeleteWorkspaceParams) {
+    if (!validator.isMongoId(workspaceId))
+      throw new BadRequestError(`Workspace Id: ${workspaceId} is invalid`);
     return await performTransaction(async (session) => {
       await Workspace.deleteWorkspace({ workspaceId, session });
     });

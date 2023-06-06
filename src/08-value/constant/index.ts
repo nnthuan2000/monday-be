@@ -9,7 +9,7 @@ interface IDefaultValuesOfType {
 }
 
 const defaultValues: IDefaultValuesOfType = {
-  status: [
+  Status: [
     {
       value: 'Working on it',
       color: '#fdbc64',
@@ -31,7 +31,7 @@ const defaultValues: IDefaultValuesOfType = {
       canEditColor: false,
     },
   ],
-  priority: [
+  Priority: [
     {
       value: 'Critical ⚠️️',
       color: '#5c5c5c',
@@ -58,7 +58,7 @@ const defaultValues: IDefaultValuesOfType = {
       canEditColor: false,
     },
   ],
-  label: [
+  Label: [
     {
       value: 'Label 1',
       color: '#aebdca',

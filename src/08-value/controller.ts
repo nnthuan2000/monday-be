@@ -7,19 +7,7 @@ import ValueService from './service';
 class ValueController<T extends IRequestWithAuth> implements IFullController<T> {
   getOne: Fn<T> = catchAsync(async (req, res, next) => {});
 
-  getAll: Fn<T> = catchAsync(async (req, res, next) => {
-    const valuesByType = await ValueService.getAllValuesByType({
-      boardId: req.params.boardId,
-      columnId: req.params.columnId,
-    });
-
-    new OK({
-      message: 'Get all values by type successfully',
-      metadata: {
-        values: valuesByType,
-      },
-    }).send(res);
-  });
+  getAll: Fn<T> = catchAsync(async (req, res, next) => {});
 
   createOne: Fn<T> = catchAsync(async (req, res, next) => {
     const createdNewValue = await ValueService.createValueByType({

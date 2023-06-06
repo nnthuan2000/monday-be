@@ -1,17 +1,15 @@
 import {
   ICreateBoardParams,
   IDeleteBoardParams,
-  IGetAllBoardsParams,
   IGetBoardParams,
   ISearchBoardsParams,
   IUpdateBoardParams,
 } from './interfaces/services';
-import { NotFoundError } from '../root/responseHandler/error.response';
-import QueryTransform from '../root/utils/queryTransform';
-import { IBoard } from './interfaces/board';
+import { BadRequestError, NotFoundError } from '../root/responseHandler/error.response';
 import Board from '../models/board';
 import Workspace from '../models/workspace';
 import { performTransaction } from '../root/utils/performTransaction';
+import validator from 'validator';
 
 export default class BoardService {
   static async searchBoards({ keyString }: ISearchBoardsParams) {
@@ -29,22 +27,8 @@ export default class BoardService {
     return foundBoards;
   }
 
-  static async getAllBoards({ workspaceId, fields, requestQuery }: IGetAllBoardsParams) {
-    const foundWorkspace = await Workspace.findById(workspaceId);
-    if (!foundWorkspace) throw new NotFoundError('Workspace is not found');
-    const boardQuery = new QueryTransform<IBoard>(
-      Board.find({ _id: { $in: foundWorkspace.boards } }),
-      requestQuery
-    )
-      .filter()
-      .sort()
-      .limitFields(fields)
-      .paginate();
-    const foundBoards = await boardQuery.getQuery();
-    return foundBoards;
-  }
-
   static async getBoard({ boardId }: IGetBoardParams) {
+    if (!validator.isMongoId(boardId)) throw new BadRequestError(`Board Id: ${boardId} is invalid`);
     const foundBoard = await Board.findById(boardId)
       .populate({
         path: 'columns',
@@ -92,8 +76,14 @@ export default class BoardService {
   }
 
   static async createBoard({ workspaceId, userId, data }: ICreateBoardParams) {
+    if (!validator.isMongoId(workspaceId))
+      throw new BadRequestError(`Workspace Id: ${workspaceId} is invalid`);
     const foundWorkspace = await Workspace.findById(workspaceId);
     if (!foundWorkspace) throw new NotFoundError('Workspace is not exist');
+    if (!data.hasOwnProperty('name'))
+      throw new BadRequestError('Missing name field to create a new board');
+    if (data.name.length === 0) throw new BadRequestError(`Name of board can't not be emptied`);
+
     return await performTransaction(async (session) => {
       const createdNewBoard = await Board.createNewBoard({
         workspaceDoc: foundWorkspace,
@@ -107,12 +97,19 @@ export default class BoardService {
   }
 
   static async updateBoard({ boardId, updationData }: IUpdateBoardParams) {
+    if (!validator.isMongoId(boardId)) throw new BadRequestError(`Board Id: ${boardId} is invalid`);
+
+    if (updationData.hasOwnProperty('groups') || updationData.hasOwnProperty('columns'))
+      throw new BadRequestError(`Can't not edit these fields: groups, columns`);
     const updatedBoard = await Board.findByIdAndUpdate(boardId, updationData, { new: true });
     if (!updatedBoard) throw new NotFoundError('Board is not found');
     return updatedBoard;
   }
 
   static async deleteBoard({ workspaceId, boardId }: IDeleteBoardParams) {
+    if (!validator.isMongoId(workspaceId))
+      throw new BadRequestError(`Workspace Id: ${workspaceId} is invalid`);
+    if (!validator.isMongoId(boardId)) throw new BadRequestError(`Board Id: ${boardId} is invalid`);
     return await performTransaction(async (session) => {
       await Board.deleteBoard({ workspaceId, boardId, session });
     });

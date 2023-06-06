@@ -21,6 +21,7 @@ import TasksColumns from './tasksColumns';
 import DefaultValue from './defaultValue';
 import { IDefaultValueDoc } from '../08-value/interfaces/defaultValue';
 import Task from './task';
+import validator from 'validator';
 
 const DOCUMENT_NAME = 'Column';
 const COLLECTION_NAME = 'Columns';
@@ -128,7 +129,7 @@ columnSchema.static(
     });
 
     createdNewColumn.defaultValues = createdNewDefaultValues;
-    createdNewColumn.belongType = foundType
+    createdNewColumn.belongType = foundType;
 
     return {
       createdNewColumn,
@@ -188,6 +189,8 @@ columnSchema.static(
 
     const gotDefaultValuesFromColumns = await Promise.all(gettingDefaultValuesFromColPromises);
 
+    console.log({ gotDefaultValuesFromColumns });
+
     return {
       createdNewColumns: gotDefaultValuesFromColumns,
       selectedDefaultValues: selectedDefaultValue,
@@ -204,6 +207,9 @@ columnSchema.static(
     const changedPositions: number[] = [];
     const desiredPositions: number[] = [];
     const updatingAllColumnPromises = columns.map((column, index) => {
+      if (!validator.isMongoId(column._id))
+        throw new BadRequestError(`Column Id: ${column._id} is invalid`);
+
       if (index !== column.position) {
         changedPositions.push(column.position);
         desiredPositions.push(index);

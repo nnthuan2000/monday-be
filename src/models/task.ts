@@ -14,11 +14,12 @@ import {
 } from '../07-task/interfaces/task';
 import db from '../root/db';
 import Group from './group';
-import { NotFoundError } from '../root/responseHandler/error.response';
+import { BadRequestError, NotFoundError } from '../root/responseHandler/error.response';
 import { createSetOfTasksColumnsByTask, createSetOfTasksColumnsByTask1 } from '../root/utils';
 import TasksColumns from './tasksColumns';
 import Board from './board';
 import { IColumnDoc } from '../05-column/interfaces/column';
+import validator from 'validator';
 
 const DOCUMENT_NAME = 'Task';
 const COLLECTION_NAME = 'Tasks';
@@ -213,6 +214,9 @@ taskSchema.static(
 taskSchema.static(
   'deleteTask',
   async function deleteTask({ groupDoc, taskId, session }: IDeleteTask) {
+    if (!validator.isMongoId(taskId.toString()))
+      throw new BadRequestError(`Task Id: ${taskId} is invalid`);
+
     const deletedTask = await this.findByIdAndDelete(taskId, { session });
     if (!deletedTask) throw new NotFoundError('Task is not found');
 

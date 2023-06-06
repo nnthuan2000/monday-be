@@ -1,15 +1,8 @@
 import { Types } from 'mongoose';
-import { IRequestQuery } from '../../root/app.interfaces';
 import { IBoard } from './board';
 
 export interface ISearchBoardsParams {
   keyString: string;
-}
-
-export interface IGetAllBoardsParams {
-  workspaceId: string;
-  fields: string;
-  requestQuery: IRequestQuery;
 }
 
 export interface IGetBoardParams {
