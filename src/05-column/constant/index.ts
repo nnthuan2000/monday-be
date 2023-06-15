@@ -7,17 +7,17 @@ export enum MultipleValueTypes {
 export const multipleValueTypes = {
   status: {
     name: MultipleValueTypes.STATUS,
-    icon: 'http://localhost:3001/v1/api/images/status-column-icon.svg',
+    icon: `${process.env.SERVER_URL}/v1/api/images/status-column-icon.svg`,
     color: '#11dd80',
   },
   priority: {
     name: MultipleValueTypes.PRIORITY,
-    icon: 'http://localhost:3001/v1/api/images/priority-column-icon.png',
+    icon: `${process.env.SERVER_URL}/v1/api/images/priority-column-icon.png`,
     color: '#feca00',
   },
   label: {
     name: MultipleValueTypes.LABEL,
-    icon: 'http://localhost:3001/v1/api/images/label-column-icon.png',
+    icon: `${process.env.SERVER_URL}/v1/api/images/label-column-icon.png`,
     color: '#a358df',
   },
 };
@@ -31,17 +31,17 @@ export enum SingleValueTypes {
 export const singleValueTypes = {
   date: {
     name: SingleValueTypes.DATE,
-    icon: 'http://localhost:3001/v1/api/images/date-column-icon.svg',
+    icon: `${process.env.SERVER_URL}/v1/api/images/date-column-icon.svg`,
     color: '#11dd80',
   },
   number: {
     name: SingleValueTypes.NUMBER,
-    icon: 'http://localhost:3001/v1/api/images/numeric-column-icon.svg',
+    icon: `${process.env.SERVER_URL}/v1/api/images/numeric-column-icon.svg`,
     color: '#ffcc00',
   },
   text: {
     name: SingleValueTypes.TEXT,
-    icon: 'http://localhost:3001/v1/api/images/text-column-icon.svg',
+    icon: `${process.env.SERVER_URL}/v1/api/images/text-column-icon.svg`,
     color: '#00a9ff',
   },
 };
